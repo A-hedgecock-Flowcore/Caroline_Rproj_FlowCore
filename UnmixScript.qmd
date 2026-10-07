@@ -1,0 +1,55 @@
+---
+title: Unmixing Script 
+author: Ayrianna Hedgecock; UNC FCCF
+format: html
+toc: true
+embed-resources: true
+---
+
+# Background 
+This script is created for Caroline XXXX by Ayrianna Hedgecock at UNC FCCF. The script will take raw spectral FCS files and unmix them.
+
+
+# Set up
+
+- Update the `file.path()` if needed
+- Place all the single color controls in the folder labelled "SCC" 
+- Place all samples in the folder labelled "Samples"
+
+
+```{r}
+#| label: packages used
+library(tidyverse)
+library(AutoSpectral)
+library(AutoSpectralRcpp)
+```
+
+```{r}
+#| label: setup
+outputfolder <- file.path("Output")
+datafolder <- file.path("Data")
+singlecolorcontrolsfolder <- file.path(datafolder, "SCC")
+samplesfolder <- file.path(datafolder, "Samples")
+```
+
+
+## AutoSpectral
+
+Set the spectral cytometer settings
+
+```{r}
+#| label: Spectral Cytometer settings
+
+asp <- get.autospectral.param(
+  cytometer = "aurora",
+  figures = TRUE
+)
+```
+
+Create a control file
+
+```{r}
+control.dir <- file.path(singlecolorcontrolsfolder)
+create.control.file(control.dir, asp)
+```
+
