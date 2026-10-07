@@ -1,19 +1,19 @@
 "filename","fluorophore","marker","channel","control.type","universal.negative","large.gate","gate.name","gate.define","is.viability"
 "23 Ki67 BUV395 (Cells).fcs","BUV395","Ki67","UV2-A","cells","",FALSE,"smallGate_1",TRUE,FALSE
-"13 CD4 BUV615 (Cells).fcs","BUV615","CD4","UV10-A","cells","",FALSE,"smallGate_1",TRUE,FALSE
-"12 CD11b BUV805 (Cells).fcs","BUV805","CD11b","UV16-A","cells","",TRUE,"largeGate_2",TRUE,FALSE
-"CD3 BV421 (Cells).fcs","BV421","CD3","V1-A","cells","",FALSE,"smallGate_1",TRUE,FALSE
-"15 CD56 BV711 (Cells).fcs","BV711","CD56","V13-A","cells","",FALSE,"smallGate_1",TRUE,FALSE
-"17 PD-1 BB515 (Cells).fcs","BB515","PD-1","B1-A","cells","",FALSE,"smallGate_1",TRUE,FALSE
-"19 CD80 RB613 (Cells).fcs","RB613","CD80","B6-A","cells","",FALSE,"smallGate_1",TRUE,FALSE
+"13 CD4 BUV615 (Cells).fcs","BUV615","CD4","UV10-A","cells","PBMC unstained (Cells).fcs",FALSE,"smallGate_1",TRUE,FALSE
+"12 CD11b BUV805 (Cells).fcs","BUV805","CD11b","UV16-A","cells","PBMC unstained (Cells).fcs",TRUE,"largeGate_2",TRUE,FALSE
+"CD3 BV421 (Cells).fcs","BV421","CD3","V1-A","cells","PBMC unstained (Cells).fcs",FALSE,"smallGate_1",TRUE,FALSE
+"15 CD56 BV711 (Cells).fcs","BV711","CD56","V13-A","cells","PBMC unstained (Cells).fcs",FALSE,"smallGate_1",TRUE,FALSE
+"17 PD-1 BB515 (Cells).fcs","BB515","PD-1","B1-A","cells","PBMC unstained (Cells).fcs",FALSE,"smallGate_1",TRUE,FALSE
+"19 CD80 RB613 (Cells).fcs","RB613","CD80","B6-A","cells","raji unstained (Cells).fcs",FALSE,"smallGate_1",TRUE,FALSE
 "24 B7H3 RB705 (Cells).fcs","RB705","B7H3","B10-A","cells","",FALSE,"smallGate_1",TRUE,FALSE
-"18 CD86 RB780 (Cells).fcs","RB780","CD86","B14-A","cells","",FALSE,"smallGate_1",TRUE,FALSE
-"FoxP3 PE (Cells).fcs","PE","FoxP3","YG1-A","cells","",FALSE,"smallGate_1",TRUE,FALSE
-"16 CD25 RY655 (Cells).fcs","RY655","CD25","YG4-A","cells","",FALSE,"smallGate_1",TRUE,FALSE
+"18 CD86 RB780 (Cells).fcs","RB780","CD86","B14-A","cells","raji unstained (Cells).fcs",FALSE,"smallGate_1",TRUE,FALSE
+"FoxP3 PE (Cells).fcs","PE","FoxP3","YG1-A","cells","NT Tcells unstained (Cells).fcs",FALSE,"smallGate_1",TRUE,FALSE
+"16 CD25 RY655 (Cells).fcs","RY655","CD25","YG4-A","cells","PBMC unstained (Cells).fcs",FALSE,"smallGate_1",TRUE,FALSE
 "CD206 RY703 (Beads).fcs","RY703","CD206","YG7-A","beads","Unstained (Beads).fcs",FALSE,"smallGate_3",TRUE,FALSE
-"CD45 PE-Cy7 (Cells).fcs","PE-Cy7","CD45","YG9-A","cells","",FALSE,"smallGate_1",TRUE,FALSE
+"CD45 PE-Cy7 (Cells).fcs","PE-Cy7","CD45","YG9-A","cells","PBMC unstained (Cells).fcs",FALSE,"smallGate_1",TRUE,FALSE
 "25 PD-L1 APC (Cells).fcs","APC","PD-L1","R1-A","cells","",TRUE,"largeGate_2",TRUE,FALSE
-"14 CD8a APC-H7 (Cells).fcs","APC-H7","CD8","R7-A","cells","",FALSE,"smallGate_1",TRUE,FALSE
+"14 CD8a APC-H7 (Cells).fcs","APC-H7","CD8a","R7-A","cells","PBMC unstained (Cells).fcs",FALSE,"smallGate_1",TRUE,FALSE
 "HEK unstained (Cells).fcs","AF","","","cells","",FALSE,"smallGate_density_orphan",TRUE,FALSE
 "NT Tcells unstained (Cells).fcs","AF","","","cells","",FALSE,"smallGate_density_orphan",TRUE,FALSE
 "PT160 unstained (Cells).fcs","AF","","","cells","",FALSE,"smallGate_density_orphan",TRUE,FALSE
@@ -25,5 +25,5 @@
 "U251 unstained (Cells).fcs","AF","","","cells","",FALSE,"smallGate_density_orphan",TRUE,FALSE
 "PT171 unstained (Cells).fcs","AF","","","cells","",FALSE,"smallGate_density_orphan",TRUE,FALSE
 "Unstained (Beads).fcs","Negative","","","beads","",FALSE,"smallGate_density_orphan",TRUE,FALSE
-"9 Helix NP Blue (Cells).fcs","Helix NP Blue","DNA","","cells","",FALSE,"smallGate_1",TRUE,FALSE
-"8 LIVE DEAD NIR (Cells).fcs","Live Dead NIR","Viability","","cells","",FALSE,"smallGate_1",TRUE,TRUE
+"9 Helix NP Blue (Cells).fcs","Helix NP Blue","DNA","V4-A","cells","",FALSE,"smallGate_1",TRUE,FALSE
+"8 LIVE DEAD NIR (Cells).fcs","Live Dead NIR","Viability","R8-A","cells","",FALSE,"smallGate_1",TRUE,TRUE
