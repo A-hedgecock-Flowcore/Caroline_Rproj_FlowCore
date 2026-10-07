@@ -75,3 +75,15 @@ Edit the file as necessary. I find this easiest within the .csv rather than prog
 
 Now that the control file has been edited, lets save it with the "_updated" suffix so it doesn't get overwritten.
 
+QC control file
+
+```{r}
+control_file <- "Output/fcs_control_file_updated.csv"
+
+check.control.file(
+  control.dir,
+  control.def.file = control_file,
+  asp,
+  allow.duplicate.controls = TRUE
+)
+```
