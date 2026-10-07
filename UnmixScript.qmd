@@ -63,13 +63,15 @@ The main structural elements to the control file are the following columns
 - **filename**: The actual .fcs filename
 - **fluorophore**: The name of the fluorophore (or AF in case of the unstained)
 - **marker**: The name of the marker (or left empty in the case of the unstained)
-- **channel**: The peak detector channel of the fluorophore (left empty for the unstained). In case the fluorophore is not present in the reference library, you will need to specify this manually
+- **channel**: The peak detector channel of the fluorophore (left empty for the unstained).
 - **control.type**: Whether the unmixing control is cells or beads (used for matching positive and negatives for background subtraction)
 - **universal.negative**: By default empty, if you want to use an universal negative, copy the filename of the corresponding unstained into this spot on a per fluorophore basis
-- **large.gate**: Logical value, by default FALSE, set to TRUE to expand the gating area (more details later)
-- **gate.name**: Gate name for use in signature retrievel (more details later)
+- **large.gate**: Logical value, by default FALSE, set to TRUE to expand the gating area
+- **gate.name**: Gate name for use in signature retrievel 
 - **gate.define**: Logical, permits you to set the general gate region as defined by gate.name
-- **is.viability**: Whether your control is a viability dye. In this case, correctly identified 7-AAD from reference database so is already set to TRUE.
+- **is.viability**: Whether your control is a viability dye. 
 
 Edit the file as necessary. I find this easiest within the .csv rather than programtically in R. 
+
+Now that the control file has been edited, lets save it with the "_updated" suffix so it doesn't get overwritten.
 
