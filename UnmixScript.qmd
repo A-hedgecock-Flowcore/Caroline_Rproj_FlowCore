@@ -7,15 +7,12 @@ embed-resources: true
 ---
 
 # Background 
-This script is created for Caroline XXXX by Ayrianna Hedgecock at UNC FCCF. The script will take raw spectral FCS files and unmix them.
+This script is created for **Caroline Stockwell** by Ayrianna Hedgecock at UNC FCCF. The script will take raw spectral FCS files and unmix them.
 
 
 # Set up
 
-- Update the `file.path()` if needed
-- Place all the single color controls in the folder labelled "SCC" 
-- Place all samples in the folder labelled "Samples"
-
+Load necessary packages
 
 ```{r}
 #| label: packages used
@@ -23,6 +20,10 @@ library(tidyverse)
 library(AutoSpectral)
 library(AutoSpectralRcpp)
 ```
+
+- Update the `file.path()` if needed
+- Place all the single color controls in the folder labelled "SCC" 
+- Place all samples in the folder labelled "Samples"
 
 ```{r}
 #| label: setup
@@ -46,10 +47,29 @@ asp <- get.autospectral.param(
 )
 ```
 
-Create a control file
+### Create a control file
 
 ```{r}
 control.dir <- file.path(singlecolorcontrolsfolder)
-create.control.file(control.dir, asp)
+create.control.file(control.dir, asp, output.dir = outputfolder)
 ```
+
+If fluorophores exist in the `AutoSpectral` database they will be autofilled in the contol .csv. If not, you will need to manually add it in. 
+
+#### Structure of the Control File
+
+The main structural elements to the control file are the following columns
+
+- **filename**: The actual .fcs filename
+- **fluorophore**: The name of the fluorophore (or AF in case of the unstained)
+- **marker**: The name of the marker (or left empty in the case of the unstained)
+- **channel**: The peak detector channel of the fluorophore (left empty for the unstained). In case the fluorophore is not present in the reference library, you will need to specify this manually
+- **control.type**: Whether the unmixing control is cells or beads (used for matching positive and negatives for background subtraction)
+- **universal.negative**: By default empty, if you want to use an universal negative, copy the filename of the corresponding unstained into this spot on a per fluorophore basis
+- **large.gate**: Logical value, by default FALSE, set to TRUE to expand the gating area (more details later)
+- **gate.name**: Gate name for use in signature retrievel (more details later)
+- **gate.define**: Logical, permits you to set the general gate region as defined by gate.name
+- **is.viability**: Whether your control is a viability dye. In this case, correctly identified 7-AAD from reference database so is already set to TRUE.
+
+Edit the file as necessary. I find this easiest within the .csv rather than programtically in R. 
 
