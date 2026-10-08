@@ -14,6 +14,8 @@ This script is created for **Caroline Stockwell** by Ayrianna Hedgecock at UNC F
 
 Load necessary packages
 
+!ENTER DEPENDICIES CODE BLOCK
+
 ```{r}
 #| label: packages used
 library(tidyverse)
@@ -41,24 +43,40 @@ Set the spectral cytometer settings
 ```{r}
 #| label: Spectral Cytometer settings
 
-asp <- get.autospectral.param(
-  cytometer = "aurora",
-  figures = TRUE
-)
+asp <- get.autospectral.param(cytometer = "aurora")
 ```
 
 ### Create a control file
 
+
+There is a ShinyApp to help with the control process, but it does not seem able to handle multiple AF controls (there is no way to set the argument 'allow.duplicates.controls' = TRUE).
+For now, we will skip the helper app (I'll keep in in the notes section to come back to maybe), but move forward with the manual way. 
+
 ```{r}
+#| label: Shiny Helper App AutoSpectral
+#| eval: false
+shiny::runApp(appDir = datafolder, launch.browser = TRUE)
+```
+
+Manual Way: 
+```{r}
+#| label: Create Control file
 control.dir <- file.path(singlecolorcontrolsfolder)
-create.control.file(control.dir, asp, output.dir = outputfolder)
+# control_filename <- "fcs_control_file" # change as desired or leave as default
+create.control.file(
+  control.dir,
+  asp,
+  output.dir = outputfolder,
+  filename = control_filename
+)
 ```
 
 If fluorophores exist in the `AutoSpectral` database they will be autofilled in the contol .csv. If not, you will need to manually add it in. 
 
 #### Structure of the Control File
 
-The main structural elements to the control file are the following columns
+See Control File information here: [Control File- AutoSpectral](https://drcytometer.github.io/AutoSpectral/articles/02_Control_File_example.html)
+The main structural elements to the control file are the following columns. Note, we will be using the `get.spectra.automated()` function, so the "legacy" columns are not needed. Read more in linked article. 
 
 - **filename**: The actual .fcs filename
 - **fluorophore**: The name of the fluorophore (or AF in case of the unstained)
@@ -66,23 +84,29 @@ The main structural elements to the control file are the following columns
 - **channel**: The peak detector channel of the fluorophore (left empty for the unstained).
 - **control.type**: Whether the unmixing control is cells or beads (used for matching positive and negatives for background subtraction)
 - **universal.negative**: By default empty, if you want to use an universal negative, copy the filename of the corresponding unstained into this spot on a per fluorophore basis
-- **large.gate**: Logical value, by default FALSE, set to TRUE to expand the gating area
-- **gate.name**: Gate name for use in signature retrievel 
-- **gate.define**: Logical, permits you to set the general gate region as defined by gate.name
-- **is.viability**: Whether your control is a viability dye. 
+- large.gate: Logical value, by default FALSE, set to TRUE to expand the gating area
+- gate.name: Gate name for use in signature retrievel 
+- gate.define: Logical, permits you to set the general gate region as defined by gate.name
+- is.viability: Whether your control is a viability dye. 
 
-Edit the file as necessary. I find this easiest within the .csv rather than programtically in R. 
+Edit the file as necessary. I find this easiest within the .csv rather than programtically in R. In the future, we can add programtic edits. 
 
-Now that the control file has been edited, lets save it with the "_updated" suffix so it doesn't get overwritten.
+Now that the control file has been edited, lets maunally save it with the **"_updated"** suffix so it doesn't get overwritten in future runs of this script. 
 
 QC control file
 
 ```{r}
-control_file <- "Output/fcs_control_file_updated.csv"
+control_filename_updated <- paste0(
+  "Output/",
+  control_filename,
+  "_updated",
+  ".csv"
+)
+control_filename_updated
 
-check.control.file(
+issues <- check.control.file(
   control.dir,
-  control.def.file = control_file,
+  control.def.file = control_filename_updated,
   asp,
   allow.duplicate.controls = TRUE
 )
