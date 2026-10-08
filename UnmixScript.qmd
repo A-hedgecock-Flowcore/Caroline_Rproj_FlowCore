@@ -49,20 +49,30 @@ asp <- get.autospectral.param(cytometer = "aurora")
 ### Create a control file
 
 
-There is a ShinyApp to help with the control process, but it does not seem able to handle multiple AF controls (there is no way to set the argument 'allow.duplicates.controls' = TRUE).
-For now, we will skip the helper app (I'll keep in in the notes section to come back to maybe), but move forward with the manual way. 
+There is a ShinyApp to help with the control process. 
+ONLY one (1) "AF" sample can be identified. This should be that patient the matrix will be used for. 
 
 ```{r}
-#| label: Shiny Helper App AutoSpectral
+#| label: Shiny Helper App AutoSpectral. Creates and validates the control file. 
 #| eval: false
 shiny::runApp(appDir = datafolder, launch.browser = TRUE)
 ```
 
-Manual Way: 
+This file was saved to the Data Folder initally, then manually moved to the Outputs folder (during testing)
+
+To do this the Manual Way: 
+
 ```{r}
-#| label: Create Control file
+#| label: filenames
+
 control.dir <- file.path(singlecolorcontrolsfolder)
-# control_filename <- "fcs_control_file" # change as desired or leave as default
+control_filename <- "fcs_control_file_Shiny" # change as desired or leave as default
+```
+
+```{r}
+#| label: Create Control file manually
+#| eval: false
+
 create.control.file(
   control.dir,
   asp,
@@ -73,7 +83,7 @@ create.control.file(
 
 If fluorophores exist in the `AutoSpectral` database they will be autofilled in the contol .csv. If not, you will need to manually add it in. 
 
-#### Structure of the Control File
+Structure of the Control File
 
 See Control File information here: [Control File- AutoSpectral](https://drcytometer.github.io/AutoSpectral/articles/02_Control_File_example.html)
 The main structural elements to the control file are the following columns. Note, we will be using the `get.spectra.automated()` function, so the "legacy" columns are not needed. Read more in linked article. 
@@ -93,9 +103,13 @@ Edit the file as necessary. I find this easiest within the .csv rather than prog
 
 Now that the control file has been edited, lets maunally save it with the **"_updated"** suffix so it doesn't get overwritten in future runs of this script. 
 
-QC control file
+### Validate control file
+QC the control file:
 
 ```{r}
+#| label: Manual control file needs to be validated if before moving forward
+#| eval: false
+
 control_filename_updated <- paste0(
   "Output/",
   control_filename,
@@ -107,7 +121,35 @@ control_filename_updated
 issues <- check.control.file(
   control.dir,
   control.def.file = control_filename_updated,
-  asp,
-  allow.duplicate.controls = TRUE
+  asp
 )
 ```
+
+### Spectral Extraction
+
+Let's clean and extract our signatures
+
+```{r}
+#| label: Extract spectra
+
+control_filename_updated <- paste0(
+  "Output/",
+  control_filename,
+  "_updated",
+  ".csv"
+)
+
+
+spectra <- get.spectra.automated(
+  control.dir,
+  control.def.file = control_filename_updated,
+  asp
+)
+```
+
+
+Figures are automatically created to QC this process. This should be a stopping point to ensure all looks good!
+
+
+## Unmixing
+
