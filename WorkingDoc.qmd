@@ -1,0 +1,242 @@
+---
+title: Unmixing Script 
+author: Ayrianna Hedgecock; UNC FCCF
+format: html
+toc: true
+embed-resources: true
+---
+
+# Background 
+This script is created for **Caroline Stockwell** by Ayrianna Hedgecock at UNC FCCF. The script will take raw spectral FCS files and unmix them.
+
+
+# Set up
+
+Load necessary packages
+
+!ENTER DEPENDICIES CODE BLOCK
+
+```{r}
+#| label: packages used
+library(tidyverse)
+library(AutoSpectral)
+library(AutoSpectralRcpp)
+library(Luciernaga)
+```
+
+- Update the `file.path()` if needed
+- Place all the single color controls in the folder labelled "SCC" 
+- Place all samples in the folder labelled "Samples"
+
+```{r}
+#| label: setup
+outputfolder <- file.path("Output")
+datafolder <- file.path("Data")
+singlecolorcontrolsfolder <- file.path(datafolder, "SCC")
+samplesfolder <- file.path(datafolder, "Samples")
+```
+
+
+## AutoSpectral
+
+Set the spectral cytometer settings
+
+```{r}
+#| label: Spectral Cytometer settings
+
+asp <- get.autospectral.param(cytometer = "aurora")
+```
+
+### Create a control file
+
+
+There is a ShinyApp to help with the control process. 
+ONLY one (1) "AF" sample can be identified. This should be that patient the matrix will be used for. 
+
+```{r}
+#| label: Shiny Helper App AutoSpectral. Creates and validates the control file. 
+#| eval: false
+shiny::runApp(appDir = datafolder, launch.browser = TRUE)
+```
+
+This file was saved to the Data Folder initally, then manually moved to the Outputs folder (during testing)
+
+To do this the Manual Way: 
+
+```{r}
+#| label: filenames
+
+control.dir <- file.path(singlecolorcontrolsfolder)
+control_filename <- "fcs_control_file_Shiny" # change as desired or leave as default
+```
+
+```{r}
+#| label: Create Control file manually
+#| eval: false
+
+create.control.file(
+  control.dir,
+  asp,
+  output.dir = outputfolder,
+  filename = control_filename
+)
+```
+
+If fluorophores exist in the `AutoSpectral` database they will be autofilled in the contol .csv. If not, you will need to manually add it in. 
+
+Structure of the Control File
+
+See Control File information here: [Control File- AutoSpectral](https://drcytometer.github.io/AutoSpectral/articles/02_Control_File_example.html)
+The main structural elements to the control file are the following columns. Note, we will be using the `get.spectra.automated()` function, so the "legacy" columns are not needed. Read more in linked article. 
+
+- **filename**: The actual .fcs filename
+- **fluorophore**: The name of the fluorophore (or AF in case of the unstained)
+- **marker**: The name of the marker (or left empty in the case of the unstained)
+- **channel**: The peak detector channel of the fluorophore (left empty for the unstained).
+- **control.type**: Whether the unmixing control is cells or beads (used for matching positive and negatives for background subtraction)
+- **universal.negative**: By default empty, if you want to use an universal negative, copy the filename of the corresponding unstained into this spot on a per fluorophore basis
+- large.gate: Logical value, by default FALSE, set to TRUE to expand the gating area
+- gate.name: Gate name for use in signature retrievel 
+- gate.define: Logical, permits you to set the general gate region as defined by gate.name
+- is.viability: Whether your control is a viability dye. 
+
+Edit the file as necessary. I find this easiest within the .csv rather than programtically in R. In the future, we can add programtic edits. 
+
+Now that the control file has been edited, lets maunally save it with the **"_updated"** suffix so it doesn't get overwritten in future runs of this script. 
+
+### Validate control file
+
+This only needs to be done if the Shiny App was **NOT** used. 
+QC the control file:
+
+```{r}
+#| label: Manual control file needs to be validated if before moving forward
+#| eval: false
+
+control_filename_updated <- paste0(
+  "Output/",
+  control_filename,
+  "_updated",
+  ".csv"
+)
+control_filename_updated
+
+issues <- check.control.file(
+  control.dir,
+  control.def.file = control_filename_updated,
+  asp
+)
+```
+
+### Spectral Extraction
+
+Let's clean and extract our signatures
+
+```{r}
+#| label: Extract spectra
+
+control_filename_updated <- paste0(
+  outputfolder,
+  "/",
+  control_filename,
+  "_updated",
+  ".csv"
+)
+
+
+spectra <- get.spectra.automated(
+  control.dir,
+  control.def.file = control_filename_updated,
+  asp
+)
+```
+
+
+Figures are automatically created to QC this process. This should be a stopping point to ensure all looks good!
+
+
+ADD A PRESENTATION OR PDF REPORT WITH IMPORTANT FIGURES GENERATED.
+
+## Unmixing
+
+Let's create a "flow.control" object to feed dye names and markers into unmixing
+
+
+```{r}
+#| label: create flow.control object and reload spectra if needed
+
+flow_control <- reload.flow.control(control.dir, control_filename_updated, asp)
+
+spectra_folder <- list.files("table_spectra")
+spectra <- read.spectra(spectra.file = spectra_folder[1]) # to call spectra file back into R if needed
+```
+
+This is a complicated sample, let's leverage the per-cell and per-fluorophore extraction to get best unmixing we can.
+
+Let's start with the AF extractions per pt
+
+
+```{r}
+#| label: patient per-cell AF extractions
+
+Patient_unstained_samples <- list.files(
+  singlecolorcontrolsfolder,
+  pattern = "PT",
+  full.names = TRUE,
+  ignore.case = TRUE
+)
+
+patient_af <- get.af.spectra(
+  unstained.sample = Patient_unstained_samples[1],
+  asp = asp,
+  spectra = spectra
+)
+```
+
+
+Test went well, let's move to per-cell fluorophore optimization
+
+ADD PRESENTATAION/REPORT TO VIEW AF SIGNATURES
+
+```{r}
+#| label: per-cell fluorophore optimization
+
+fluorophore_variants <- get.spectral.variants(
+  control.dir = control.dir,
+  control.def.file = control_filename_updated,
+  asp = asp,
+  spectra = spectra,
+  output.dir = outputfolder
+)
+```
+
+Now, let's put both pieces together to do the final unmix
+
+ADD PRESENTATION/REPORT TO VIEW FLUOROPHORE VARIANTS
+
+```{r}
+#| label: unmixing
+
+Patient_sample <- list.files(samplesfolder, full.names = TRUE)
+
+unmix.fcs(
+  fcs.file = Patient_sample[1], #PT169
+  spectra = spectra,
+  asp = asp,
+  flow.control = flow_control,
+  method = "AutoSpectral",
+  af.spectra = patient_af,
+  spectra.variants = fluorophore_variants,
+  speed = "slow"
+)
+```
+
+Now that we've completed the unmixing of one file, let's check our work!
+
+## QC unmixing
+
+Let's do some basic clean up gates prior to visualizing the NxN plot
+
+```{r}
+
+```
