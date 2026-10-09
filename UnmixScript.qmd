@@ -153,3 +153,72 @@ Figures are automatically created to QC this process. This should be a stopping 
 
 ## Unmixing
 
+Let's create a "flow.control" object to feed dye names and markers into unmixing
+
+
+```{r}
+#| label: create flow.control object and reload spectra if needed
+
+flow_control <- reload.flow.control(control.dir, control_filename_updated, asp)
+
+spectra_folder <- list.files("table_spectra")
+# spectra <- read.spectra(spectra.file = spectra_folder[1]) # to call spectra file back into R if needed
+```
+
+This is a complicated sample, let's leverage the per-cell and per-fluorophore extraction to get best unmixing we can.
+
+Let's start with the AF extractions per pt
+
+
+```{r}
+#| label: patient per-cell AF extractions
+
+Patient_unstained_samples <- list.files(
+  singlecolorcontrolsfolder,
+  pattern = "PT",
+  full.names = TRUE,
+  ignore.case = TRUE
+)
+
+patient_af <- get.af.spectra(
+  unstained.sample = Patient_unstained_samples[1],
+  asp = asp,
+  spectra = spectra
+)
+```
+
+Test went well, let's move to per-cell fluorophore optimization
+
+
+```{r}
+#| label: per-cell fluorophore optimization
+
+fluorophore_variants <- get.spectral.variants(
+  control.dir = control.dir,
+  control.def.file = control_filename_updated,
+  asp = asp,
+  spectra = spectra,
+  output.dir = outputfolder
+)
+```
+
+Now, let's put both pieces together to do the final unmix
+
+
+```{r}
+#| label: unmixing
+
+Patient_sample <- list.files(samplesfolder, full.names = TRUE)
+
+unmix.fcs(
+  fcs.file = Patient_sample[1], #PT169
+  spectra = spectra,
+  asp = asp,
+  flow.control = flow_control,
+  method = "AutoSpectral",
+  af.spectra = patient_af,
+  spectra.variants = fluorophore_variants,
+  speed = "slow"
+)
+```
+
