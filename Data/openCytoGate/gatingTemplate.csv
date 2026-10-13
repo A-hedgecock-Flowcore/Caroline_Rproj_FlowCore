@@ -1,0 +1,5 @@
+alias 	pop	parent	dims	gating_method	gating_args	collapseDataForGating	groupBy	preprocessing_method	preprocessing_args
+singletsFSC	+	root	FSC-A,FSC-H	singletGate		FALSE	NA	NA	NA
+singletsSSC	+	singletsFSC	SSC-A,SSC-H	singletGate		FALSE	NA	NA	NA
+nonDebris	+	singletsSSC	FSC-A	gate_mindensity		FALSE	NA	NA	NA
+cells	+	nonDebris	FSC-A, SSC-A	flowClust	K=2, target=c(1e5, 5e4)	FALSE	NA	NA	NA

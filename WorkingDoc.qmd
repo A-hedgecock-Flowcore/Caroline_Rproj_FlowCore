@@ -14,7 +14,7 @@ This script is created for **Caroline Stockwell** by Ayrianna Hedgecock at UNC F
 
 Load necessary packages
 
-!ENTER DEPENDICIES CODE BLOCK
+### !ENTER DEPENDICIES CODE BLOCK
 
 ```{r}
 #| label: packages used
@@ -23,6 +23,7 @@ library(AutoSpectral)
 library(AutoSpectralRcpp)
 library(Luciernaga)
 library(openCyto)
+library(flowWorkspace)
 ```
 
 - Update the `file.path()` if needed
@@ -112,7 +113,6 @@ QC the control file:
 
 ```{r}
 #| label: Manual control file needs to be validated if before moving forward
-#| eval: false
 
 control_filename_updated <- paste0(
   "Output/",
@@ -135,15 +135,7 @@ Let's clean and extract our signatures
 
 ```{r}
 #| label: Extract spectra
-
-control_filename_updated <- paste0(
-  outputfolder,
-  "/",
-  control_filename,
-  "_updated",
-  ".csv"
-)
-
+#| eval: false
 
 spectra <- get.spectra.automated(
   control.dir,
@@ -156,7 +148,7 @@ spectra <- get.spectra.automated(
 Figures are automatically created to QC this process. This should be a stopping point to ensure all looks good!
 
 
-ADD A PRESENTATION OR PDF REPORT WITH IMPORTANT FIGURES GENERATED.
+### ADD A PRESENTATION OR PDF REPORT WITH IMPORTANT FIGURES GENERATED.
 
 ## Unmixing
 
@@ -187,36 +179,50 @@ Patient_unstained_samples <- list.files(
   ignore.case = TRUE
 )
 
-patient_af <- get.af.spectra(
-  unstained.sample = Patient_unstained_samples[1],
-  asp = asp,
-  spectra = spectra
-)
+# patient_af <- get.af.spectra(
+#   unstained.sample = Patient_unstained_samples[1],
+#   asp = asp,
+#   spectra = spectra
+# )
+
+# to call af file back to R
+af_file <- list.files("table_spectra")
+patient_af <- read.spectra(spectra.file = af_file[4])
 ```
 
 
 Test went well, let's move to per-cell fluorophore optimization
 
-ADD PRESENTATAION/REPORT TO VIEW AF SIGNATURES
+### ADD PRESENTATAION/REPORT TO VIEW AF SIGNATURES
 
 ```{r}
 #| label: per-cell fluorophore optimization
 
-fluorophore_variants <- get.spectral.variants(
-  control.dir = control.dir,
-  control.def.file = control_filename_updated,
-  asp = asp,
-  spectra = spectra,
-  output.dir = outputfolder
+# fluorophore_variants <- get.spectral.variants(
+#   control.dir = control.dir,
+#   control.def.file = control_filename_updated,
+#   asp = asp,
+#   spectra = spectra,
+#   output.dir = outputfolder
+# )
+
+# to call back in
+spectral_variants_RDS <- list.files(
+  outputfolder,
+  pattern = ".RDS",
+  full.names = TRUE,
+  ignore.case = TRUE
 )
+fluorophore_variants <- read_rds(spectral_variants_RDS)
 ```
 
 Now, let's put both pieces together to do the final unmix
 
-ADD PRESENTATION/REPORT TO VIEW FLUOROPHORE VARIANTS
+### ADD PRESENTATION/REPORT TO VIEW FLUOROPHORE VARIANTS
 
 ```{r}
 #| label: unmixing
+#| eval: false
 
 Patient_sample <- list.files(samplesfolder, full.names = TRUE)
 
@@ -239,5 +245,19 @@ Now that we've completed the unmixing of one file, let's check our work!
 Let's do some basic clean up gates prior to visualizing the NxN plot
 
 ```{r}
-library(openCyto)
+#| label: Load OpenCyto Gating Template
+GatingFolder <- file.path(datafolder, "openCytoGate")
+CleanUpGatingTemplateFile <- list.files(
+  GatingFolder,
+  pattern = ".csv",
+  full.names = TRUE
+)
+cleanup_Gates <- gatingTemplate(CleanUpGatingTemplateFile)
+```
+
+
+```{r}
+#| label: Create GatingSet 
+
+patient_cytoset <- load_cytoset_from_fcs()
 ```
