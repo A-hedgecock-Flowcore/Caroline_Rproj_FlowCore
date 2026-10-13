@@ -2288,7 +2288,8 @@ The following objects are masked from &#39;package:AutoSpectral&#39;:
 
     readFCS, sanitize.optimization.inputs, unmix.wls.fast, writeFCS</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Luciernaga)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Luciernaga)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(openCyto)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <ul>
 <li>Update the <code>file.path()</code> if needed</li>
@@ -2350,7 +2351,7 @@ The following objects are masked from &#39;package:AutoSpectral&#39;:
 </section>
 <section id="validate-control-file" class="level3">
 <h3 class="anchored" data-anchor-id="validate-control-file">Validate control file</h3>
-<p>QC the control file:</p>
+<p>This only needs to be done if the Shiny App was <strong>NOT</strong> used. QC the control file:</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>control_filename_updated <span class="ot">&lt;-</span> <span class="fu">paste0</span>(</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Output/&quot;</span>,</span>
@@ -2372,18 +2373,19 @@ The following objects are masked from &#39;package:AutoSpectral&#39;:
 <p>Let’s clean and extract our signatures</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>control_filename_updated <span class="ot">&lt;-</span> <span class="fu">paste0</span>(</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Output/&quot;</span>,</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  control_filename,</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;_updated&quot;</span>,</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;.csv&quot;</span></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  outputfolder,</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;/&quot;</span>,</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  control_filename,</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;_updated&quot;</span>,</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;.csv&quot;</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>spectra <span class="ot">&lt;-</span> <span class="fu">get.spectra.automated</span>(</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>  control.dir,</span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">control.def.file =</span> control_filename_updated,</span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  asp</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>spectra <span class="ot">&lt;-</span> <span class="fu">get.spectra.automated</span>(</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  control.dir,</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">control.def.file =</span> control_filename_updated,</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>  asp</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>[34m-- Checking control file --[0m</code></pre>
 </div>
@@ -2623,7 +2625,7 @@ instrument and protocol; minor deviations from library references are normal.
 ---------------------------</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
-<pre><code>QC Report saved to: figure_spectra/Clean_spectral_qc_report_20261009_083946.pdf</code></pre>
+<pre><code>QC Report saved to: figure_spectra/Clean_spectral_qc_report_20261013_170349.pdf</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>[34m  BV711: automated cos=0.8260, legacy cos=0.9372[0m</code></pre>
@@ -2712,7 +2714,7 @@ instrument and protocol; minor deviations from library references are normal.
 ---------------------------</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
-<pre><code>QC Report saved to: figure_spectra/Automated_spectral_qc_report_refined_20261009_083929.pdf</code></pre>
+<pre><code>QC Report saved to: figure_spectra/Automated_spectral_qc_report_refined_20261013_170333.pdf</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>[33mNote: Legacy refinement was run for BV711.
@@ -2723,6 +2725,7 @@ instrument and protocol; minor deviations from library references are normal.
 </div>
 </div>
 <p>Figures are automatically created to QC this process. This should be a stopping point to ensure all looks good!</p>
+<p>ADD A PRESENTATION OR PDF REPORT WITH IMPORTANT FIGURES GENERATED.</p>
 </section>
 </section>
 <section id="unmixing" class="level2">
@@ -2740,7 +2743,7 @@ B14-A, YG1-A, YG2-A, YG3-A, YG4-A, YG5-A, YG6-A, YG7-A, YG8-A, YG9-A, YG10-A,
 R1-A, R2-A, R3-A, R4-A, R5-A, R6-A, R7-A, R8-A. Unmixing may be inaccurate.</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a>spectra_folder <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="st">&quot;table_spectra&quot;</span>)</span>
-<span id="cb102-2"><a href="#cb102-2" aria-hidden="true" tabindex="-1"></a><span class="co"># spectra &lt;- read.spectra(spectra.file = spectra_folder[1]) # to call spectra file back into R if needed</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb102-2"><a href="#cb102-2" aria-hidden="true" tabindex="-1"></a>spectra <span class="ot">&lt;-</span> <span class="fu">read.spectra</span>(<span class="at">spectra.file =</span> spectra_folder[<span class="dv">1</span>]) <span class="co"># to call spectra file back into R if needed</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>This is a complicated sample, let’s leverage the per-cell and per-fluorophore extraction to get best unmixing we can.</p>
 <p>Let’s start with the AF extractions per pt</p>
@@ -2804,6 +2807,7 @@ R1-A, R2-A, R3-A, R4-A, R5-A, R6-A, R7-A, R8-A. Unmixing may be inaccurate.</cod
 </div>
 </div>
 <p>Test went well, let’s move to per-cell fluorophore optimization</p>
+<p>ADD PRESENTATAION/REPORT TO VIEW AF SIGNATURES</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb119"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb119-1"><a href="#cb119-1" aria-hidden="true" tabindex="-1"></a>fluorophore_variants <span class="ot">&lt;-</span> <span class="fu">get.spectral.variants</span>(</span>
 <span id="cb119-2"><a href="#cb119-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">control.dir =</span> control.dir,</span>
@@ -2812,6 +2816,11 @@ R1-A, R2-A, R3-A, R4-A, R5-A, R6-A, R7-A, R8-A. Unmixing may be inaccurate.</cod
 <span id="cb119-5"><a href="#cb119-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">spectra =</span> spectra,</span>
 <span id="cb119-6"><a href="#cb119-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">output.dir =</span> outputfolder</span>
 <span id="cb119-7"><a href="#cb119-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Could not resolve a fluorophore identity for the following `spectra`
+row(s) against the fluorophore database, so they could not be checked for
+duplicate controls: Helix NP Blue, Live Dead Nir (876).</code></pre>
+</div>
 <div class="cell-output cell-output-stderr">
 <pre><code>[32mChecking control file and fluorophore labels for errors [0m</code></pre>
 </div>
@@ -3009,19 +3018,20 @@ control_filename_updated, : Variant calculation failed for: Live Dead Nir (876)
 </div>
 </div>
 <p>Now, let’s put both pieces together to do the final unmix</p>
+<p>ADD PRESENTATION/REPORT TO VIEW FLUOROPHORE VARIANTS</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb180"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb180-1"><a href="#cb180-1" aria-hidden="true" tabindex="-1"></a>Patient_sample <span class="ot">&lt;-</span> <span class="fu">list.files</span>(samplesfolder, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb180-2"><a href="#cb180-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb180-3"><a href="#cb180-3" aria-hidden="true" tabindex="-1"></a><span class="fu">unmix.fcs</span>(</span>
-<span id="cb180-4"><a href="#cb180-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">fcs.file =</span> Patient_sample[<span class="dv">1</span>], <span class="co">#PT169</span></span>
-<span id="cb180-5"><a href="#cb180-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">spectra =</span> spectra,</span>
-<span id="cb180-6"><a href="#cb180-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">asp =</span> asp,</span>
-<span id="cb180-7"><a href="#cb180-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">flow.control =</span> flow_control,</span>
-<span id="cb180-8"><a href="#cb180-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;AutoSpectral&quot;</span>,</span>
-<span id="cb180-9"><a href="#cb180-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">af.spectra =</span> patient_af,</span>
-<span id="cb180-10"><a href="#cb180-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">spectra.variants =</span> fluorophore_variants,</span>
-<span id="cb180-11"><a href="#cb180-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">speed =</span> <span class="st">&quot;slow&quot;</span></span>
-<span id="cb180-12"><a href="#cb180-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb181"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb181-1"><a href="#cb181-1" aria-hidden="true" tabindex="-1"></a>Patient_sample <span class="ot">&lt;-</span> <span class="fu">list.files</span>(samplesfolder, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb181-2"><a href="#cb181-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb181-3"><a href="#cb181-3" aria-hidden="true" tabindex="-1"></a><span class="fu">unmix.fcs</span>(</span>
+<span id="cb181-4"><a href="#cb181-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">fcs.file =</span> Patient_sample[<span class="dv">1</span>], <span class="co">#PT169</span></span>
+<span id="cb181-5"><a href="#cb181-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">spectra =</span> spectra,</span>
+<span id="cb181-6"><a href="#cb181-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">asp =</span> asp,</span>
+<span id="cb181-7"><a href="#cb181-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">flow.control =</span> flow_control,</span>
+<span id="cb181-8"><a href="#cb181-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;AutoSpectral&quot;</span>,</span>
+<span id="cb181-9"><a href="#cb181-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">af.spectra =</span> patient_af,</span>
+<span id="cb181-10"><a href="#cb181-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">spectra.variants =</span> fluorophore_variants,</span>
+<span id="cb181-11"><a href="#cb181-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">speed =</span> <span class="st">&quot;slow&quot;</span></span>
+<span id="cb181-12"><a href="#cb181-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Unmixing method: AutoSpectral.</code></pre>
 </div>
@@ -3290,7 +3300,7 @@ Unmixing may be inaccurate.</code></pre>
 <pre><code>Skipping optimization for Live Dead Nir (876) - No spectral variation detected.</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Estimated unmixing time: 4s for 94968 events across 1 chunk(s), based on a 5000-event probe (25935 events/sec). Treat as accurate to within roughly 4-5x.</code></pre>
+<pre><code>Estimated unmixing time: 4s for 94968 events across 1 chunk(s), based on a 5000-event probe (25772 events/sec). Treat as accurate to within roughly 4-5x.</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Skipping optimization for BV711 - No spectral variation detected.</code></pre>
@@ -3318,6 +3328,10 @@ Unmixing may be inaccurate.</code></pre>
 </section>
 <section id="qc-unmixing" class="level2">
 <h2 class="anchored" data-anchor-id="qc-unmixing">QC unmixing</h2>
+<p>Let’s do some basic clean up gates prior to visualizing the NxN plot</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb258"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb258-1"><a href="#cb258-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(openCyto)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
 </section>
 </section>
 

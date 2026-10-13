@@ -22,6 +22,7 @@ library(tidyverse)
 library(AutoSpectral)
 library(AutoSpectralRcpp)
 library(Luciernaga)
+library(openCyto)
 ```
 
 - Update the `file.path()` if needed
@@ -238,5 +239,5 @@ Now that we've completed the unmixing of one file, let's check our work!
 Let's do some basic clean up gates prior to visualizing the NxN plot
 
 ```{r}
-
+library(openCyto)
 ```
