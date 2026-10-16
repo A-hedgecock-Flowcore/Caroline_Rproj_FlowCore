@@ -392,7 +392,7 @@ plot(patient_GS)
 
 ```{r}
 #| label: Adjust gating
-
+#| eval: false
 gs_gate_interactive_adjust(
   gs = patient_GS,
   gate = "singletsFSC",
@@ -409,6 +409,95 @@ Utility_GatingPlots(
 )
 ```
 
+```{r}
+#| label: save gatingset
+#| eval: false
+
+gs_save_path <- file.path(outputfolder, "GatingSet")
+save_gs(patient_GS, path = gs_save_path)
+
+load_gs(gs_save_path)
+```
+
+### NxN plots
+Okay, I am happy with these gates. Now that they are applied, lets see the NxN plot
+
+```{r}
+#| label: Cleaned NxN plots
+Utility_NbyNPlots(
+  patient_GS,
+  sample.name = "GUID",
+  gatesubset = "singletsSSC",
+  ycolumn = "PE-Cy7-A",
+  bins = 250
+)
+```
+
+
+#### PUT INTO A PRESENTATION
+
+#### CompensAID package
+
+Is the comepsAID package useful?
+
+```{r}
+#| label: get flowframe
+
+gated_data_flowframe <- gh_pop_get_data(
+  patient_GS[[1]],
+  y = "singletsSSC",
+  inverse.transform = FALSE
+)
+
+ff <- cytoframe_to_flowFrame(gated_data_flowframe)
+
+ff[, names(markernames(ff))]
+```
+
+```{r}
+library(CompensAID)
+```
+
+
+```{r}
+#| label: Run Compensaid and visualize
+compensaid_results <- CompensAID(ff)
+compensaid_matirx <- PlotMatrix(compensaid_results)
+compensaid_matirx
+```
+
+```{r}
+#| label: View flagged pairs
+
+# Check SSI < -1
+index <- which(compensaid_results$matrix < -1, arr.ind = TRUE)
+
+combination <- data.frame(
+  primary.channel = rownames(compensaid_results$matrix)[index[, "col"]],
+  secondary.channel = rownames(compensaid_results$matrix)[index[, "row"]]
+) |>
+  mutate(
+    primary.marker = markernames(ff)[primary.channel],
+    secondary.marker = markernames(ff)[secondary.channel]
+  )
+
+compensaid_plots <- pmap(
+  combination[c("primary.marker", "secondary.marker")],
+  \(primary.marker, secondary.marker) {
+    PlotDotSSI(
+      compensaid_results,
+      ff,
+      primary = primary.marker,
+      secondary = secondary.marker,
+      showScores = TRUE
+    )
+  }
+)
+
+walk(compensaid_plots, print)
+```
+
+This is potentially very powerful!
 
 # Environment Information
 
