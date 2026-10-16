@@ -300,7 +300,6 @@ Template <- gatingTemplate(cleanup_gates)
 #| label: Create GatingSet & transform
 
 # locate unmixed files
-unmixed_folder <- file.path(datafolder, "AutoSpectral_unmixed")
 unmixed_files <- list.files(unmixed_folder, full.names = TRUE)
 
 unmixed_files
@@ -314,19 +313,40 @@ patient_cytoset <- load_cytoset_from_fcs(
 
 # create GatingSet for gates
 patient_GS <- GatingSet(patient_cytoset)
-
-#transform data
-
 ```
 
+```{r}
+#| label: transform data
 
-Will this be easier via CytoExploreR?
+# list of fluorophores in files
+parameters <- colnames(patient_GS)
+flurophores_only <- parameters[!str_detect(parameters, "Time|FSC|SSC|Index")]
+flurophores_only
+
+# transformation
+Biexponential <- flowjo_biexp_trans(
+  channelRange = 4096,
+  maxValue = 262144,
+  pos = 4.5,
+  neg = 0,
+  widthBasis = -500
+)
+BiexTransformList <- transformerList(flurophores_only, Biexponential)
+
+transform(patient_GS, BiexTransformList)
+```
 
 
 ```{r}
+#| label: View transformation
 
+Luciernaga::Utility_NbyNPlots(
+    patient_GS,
+    sample.name = "GUID",
+    outpath = outputfolder,
+    ycolumn = "SSC-A"
+)
 ```
-
 
 
 # Environment Information
