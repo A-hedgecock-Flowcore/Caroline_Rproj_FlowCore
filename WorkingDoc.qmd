@@ -38,6 +38,7 @@ library(AutoSpectralRcpp)
 library(Luciernaga)
 library(openCyto)
 library(flowWorkspace)
+library(flowGate)
 ```
 
 - Update the `file.path()` if needed
@@ -280,11 +281,14 @@ unmix.fcs(
 Now that we've completed the unmixing of one file, let's check our work!
 
 ## QC unmixing
-
+### automated gating set up
 Let's do some basic clean up gates prior to visualizing the NxN plot
+
+See how to write the gating Template [here](https://www.bioconductor.org/packages/3.24/bioc/vignettes/openCyto/inst/doc/HowToWriteCSVTemplate.html)
 
 ```{r}
 #| label: Load OpenCyto Gating Template
+
 GatingFolder <- file.path("openCytoGate")
 CleanUpGatingTemplateFile <- list.files(
   GatingFolder,
@@ -295,7 +299,7 @@ cleanup_gates <- data.table::fread(CleanUpGatingTemplateFile)
 Template <- gatingTemplate(cleanup_gates)
 ```
 
-
+### GatingSet and Transformation
 ```{r}
 #| label: Create GatingSet & transform
 
@@ -329,7 +333,7 @@ Biexponential <- flowjo_biexp_trans(
   maxValue = 262144,
   pos = 4.5,
   neg = 0,
-  widthBasis = -500
+  widthBasis = -1000
 )
 BiexTransformList <- transformerList(flurophores_only, Biexponential)
 
@@ -344,7 +348,64 @@ Luciernaga::Utility_NbyNPlots(
     patient_GS,
     sample.name = "GUID",
     outpath = outputfolder,
-    ycolumn = "SSC-A"
+    ycolumn = "SSC-A",
+    returntype = "patchwork"
+)
+
+ggcyto::ggcyto(patient_GS[1], subset = "root", aes(x = "FSC-A", y = "SSC-A")) +
+    geom_hex(bins = 300)
+```
+
+### Apply automated gating scheme
+```{r}
+#| label: Run automated gating
+
+gt_gating(Template, patient_GS)
+```
+
+```{r}
+#| label: Check gating
+
+plot(patient_GS)
+
+Utility_GatingPlots(
+  patient_GS,
+  sample.name = "GUID",
+  gtFile = cleanup_gates,
+  returnType = "patchwork",
+  removestrings = ".fcs"
+)
+```
+
+
+The gating is okay... let's see if we can adjust them.
+
+### Adjust gates as needed
+
+Let's try a manual cleanup gate
+
+The "singletsFSC" is too narrow for me - let's adjust
+
+```{r}
+plot(patient_GS)
+```
+
+```{r}
+#| label: Adjust gating
+
+gs_gate_interactive_adjust(
+  gs = patient_GS,
+  gate = "singletsFSC",
+  sample = 1,
+  AdjustAll = TRUE
+)
+
+Utility_GatingPlots(
+  patient_GS,
+  sample.name = "GUID",
+  gtFile = cleanup_gates,
+  returnType = "patchwork",
+  removestrings = ".fcs"
 )
 ```
 
