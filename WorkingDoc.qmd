@@ -14,6 +14,11 @@ This script is created for **Caroline Stockwell** by Ayrianna Hedgecock at UNC F
 
 Load necessary packages
 
+## environment initialization
+
+```{r}
+renv::init()
+```
 ### !ENTER DEPENDICIES CODE BLOCK
 
 ```{r}
@@ -252,12 +257,43 @@ CleanUpGatingTemplateFile <- list.files(
   pattern = ".csv",
   full.names = TRUE
 )
-cleanup_Gates <- gatingTemplate(CleanUpGatingTemplateFile)
+cleanup_gates <- data.table::fread(CleanUpGatingTemplateFile)
+Template <- gatingTemplate(cleanup_gates)
 ```
 
 
 ```{r}
-#| label: Create GatingSet 
+#| label: Create GatingSet & transform
 
-patient_cytoset <- load_cytoset_from_fcs()
+# locate unmixed files
+unmixed_folder <- file.path("AutoSpectral_unmixed")
+unmixed_files <- list.files(unmixed_folder, full.names = TRUE)
+
+# load in as a cytoset
+patient_cytoset <- load_cytoset_from_fcs(
+  unmixed_files,
+  truncate_max_range = FALSE,
+  transformation = FALSE
+)
+
+# create GatingSet for gates
+patient_GS <- GatingSet(patient_cytoset)
+
+#transform data
+```
+
+
+Will this be easier via CytoExploreR?
+
+
+```{r}
+
+```
+
+
+
+# SessionInfo
+
+```{r}
+sessionInfo()
 ```
