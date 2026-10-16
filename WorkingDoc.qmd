@@ -17,9 +17,18 @@ Load necessary packages
 ## environment initialization
 
 ```{r}
-renv::init()
+#| label: Restore enviroment if needed
+#| eval: false
+
+renv::restore()
+renv::status()
+renv::dependencies()
 ```
-### !ENTER DEPENDICIES CODE BLOCK
+
+### To-Dos
+- enviornment init/ package checklist to transfer to new computer
+- update output folder for figures in AutoSpectral
+
 
 ```{r}
 #| label: packages used
@@ -37,10 +46,21 @@ library(flowWorkspace)
 
 ```{r}
 #| label: setup
+
+# folder locations
 outputfolder <- file.path("Output")
 datafolder <- file.path("Data")
 singlecolorcontrolsfolder <- file.path(datafolder, "SCC")
 samplesfolder <- file.path(datafolder, "Samples")
+unmixed_folder <- file.path(datafolder, "AutoSpectral_unmixed")
+
+# Patient samples
+Patient_unstained_samples <- list.files(
+    singlecolorcontrolsfolder,
+    pattern = "PT",
+    full.names = TRUE,
+    ignore.case = TRUE
+)
 ```
 
 
@@ -175,7 +195,7 @@ Let's start with the AF extractions per pt
 
 
 ```{r}
-#| label: patient per-cell AF extractions
+#| label: patient per-cell AF extractions. Patient unstained locations - move to top of script
 
 Patient_unstained_samples <- list.files(
   singlecolorcontrolsfolder,
@@ -184,13 +204,22 @@ Patient_unstained_samples <- list.files(
   ignore.case = TRUE
 )
 
-# patient_af <- get.af.spectra(
-#   unstained.sample = Patient_unstained_samples[1],
-#   asp = asp,
-#   spectra = spectra
-# )
+```
 
-# to call af file back to R
+```{r}
+#| label: Extract AF
+#| eval: false
+
+patient_af <- get.af.spectra(
+  unstained.sample = Patient_unstained_samples[1],
+  asp = asp,
+  spectra = spectra
+)
+```
+
+```{r}
+#| label: to call af file back to R
+
 af_file <- list.files("table_spectra")
 patient_af <- read.spectra(spectra.file = af_file[4])
 ```
@@ -202,16 +231,20 @@ Test went well, let's move to per-cell fluorophore optimization
 
 ```{r}
 #| label: per-cell fluorophore optimization
+#| eval: false
 
-# fluorophore_variants <- get.spectral.variants(
-#   control.dir = control.dir,
-#   control.def.file = control_filename_updated,
-#   asp = asp,
-#   spectra = spectra,
-#   output.dir = outputfolder
-# )
+fluorophore_variants <- get.spectral.variants(
+  control.dir = control.dir,
+  control.def.file = control_filename_updated,
+  asp = asp,
+  spectra = spectra,
+  output.dir = outputfolder
+)
 
-# to call back in
+```
+
+```{r}
+#| label: to call back in
 spectral_variants_RDS <- list.files(
   outputfolder,
   pattern = ".RDS",
@@ -226,20 +259,21 @@ Now, let's put both pieces together to do the final unmix
 ### ADD PRESENTATION/REPORT TO VIEW FLUOROPHORE VARIANTS
 
 ```{r}
-#| label: unmixing
+#| label: run full unmixing
 #| eval: false
 
 Patient_sample <- list.files(samplesfolder, full.names = TRUE)
 
 unmix.fcs(
-  fcs.file = Patient_sample[1], #PT169
+  fcs.file = Patient_sample[1], #one example
   spectra = spectra,
   asp = asp,
   flow.control = flow_control,
   method = "AutoSpectral",
   af.spectra = patient_af,
   spectra.variants = fluorophore_variants,
-  speed = "slow"
+  speed = "slow",
+  output.dir = unmixed_folder
 )
 ```
 
@@ -251,7 +285,7 @@ Let's do some basic clean up gates prior to visualizing the NxN plot
 
 ```{r}
 #| label: Load OpenCyto Gating Template
-GatingFolder <- file.path(datafolder, "openCytoGate")
+GatingFolder <- file.path("openCytoGate")
 CleanUpGatingTemplateFile <- list.files(
   GatingFolder,
   pattern = ".csv",
@@ -266,8 +300,10 @@ Template <- gatingTemplate(cleanup_gates)
 #| label: Create GatingSet & transform
 
 # locate unmixed files
-unmixed_folder <- file.path("AutoSpectral_unmixed")
+unmixed_folder <- file.path(datafolder, "AutoSpectral_unmixed")
 unmixed_files <- list.files(unmixed_folder, full.names = TRUE)
+
+unmixed_files
 
 # load in as a cytoset
 patient_cytoset <- load_cytoset_from_fcs(
@@ -280,6 +316,7 @@ patient_cytoset <- load_cytoset_from_fcs(
 patient_GS <- GatingSet(patient_cytoset)
 
 #transform data
+
 ```
 
 
@@ -292,7 +329,14 @@ Will this be easier via CytoExploreR?
 
 
 
-# SessionInfo
+# Environment Information
+
+```{r}
+#| label: update renv
+#| eval: false
+
+renv::snapshot()
+```
 
 ```{r}
 sessionInfo()
