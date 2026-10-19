@@ -6,30 +6,31 @@ toc: true
 embed-resources: true
 ---
 
-# Background 
-This script is created for **Caroline Stockwell** by Ayrianna Hedgecock at UNC FCCF. The script will take raw spectral FCS files and unmix them.
+# Background
 
+This script is created for **Caroline Stockwell** by Ayrianna Hedgecock at UNC FCCF. The script will take raw spectral FCS files and unmix them.
 
 # Set up
 
-Load necessary packages
-
 ## environment initialization
+
+> Run the below code block if this the the first time running analysis on the computer! See README.md
+
+This will be moved the the README and not inculded in final script.
 
 ```{r}
 #| label: Restore enviroment if needed
 #| eval: false
 
+install.packages("renv")
 renv::restore()
-renv::status()
-renv::dependencies()
 ```
 
 ### To-Dos
+
 - enviornment init/ package checklist to transfer to new computer
 - update output folder for figures in AutoSpectral
 - Update and move ALL `file.paths()` to the file.paths code block
-
 
 ```{r}
 #| label: packages used
@@ -40,31 +41,64 @@ library(Luciernaga)
 library(openCyto)
 library(flowWorkspace)
 library(flowGate)
+library(yaml)
+library(here)
+library(fs)
+library(withr)
 ```
 
 - Update the `file.path()` if needed
-- Place all the single color controls in the folder labelled "SCC" 
+  - Let's switch to something more flexible by using a .yml file to configure folder names
+- Place all the single color controls in the folder labelled "SCC"
 - Place all samples in the folder labelled "Samples"
 
+
 ```{r}
-#| label: file.paths
+#| label: file paths
 
-# folder locations
-outputfolder <- file.path("Output")
-datafolder <- file.path("Data")
-singlecolorcontrolsfolder <- file.path(datafolder, "SCC")
-samplesfolder <- file.path(datafolder, "Samples")
-unmixed_folder <- file.path(datafolder, "AutoSpectral_unmixed")
+analysis_config_location <- file.path("AnalysisInfo")
+parameters_file <- list.files(
+  analysis_config_location,
+  "\\.yml$",
+  full.names = TRUE
+)
+analysis_parameters <- read_yaml(parameters_file)
 
-# Patient samples
+input_folder <- file.path(analysis_parameters$input_folder)
+output_folder <- file.path(analysis_parameters$output_folder)
+single_color_control_folder <- file.path(
+  input_folder,
+  analysis_parameters$single_color_controls_folder
+)
+samples_folder <- file.path(input_folder, analysis_parameters$samples_folder)
+unmixed_folder <- file.path(output_folder, analysis_parameters$unmixed_folder)
+```
+
+
+```{r}
+#| label: More set up
+
 Patient_unstained_samples <- list.files(
-    singlecolorcontrolsfolder,
-    pattern = "PT",
+    single_color_control_folder,
+    pattern = analysis_parameters$patient_sample_pattern,
+    full.names = TRUE,
+    ignore.case = TRUE
+)
+
+Patient_samples <- list.files(
+    path = samples_folder,
+    pattern = analysis_parameters$patient_sample_pattern,
+    full.names = TRUE,
+    ignore.case = TRUE
+)
+
+CleanUpGatingTemplateFile <- list.files(
+    path = analysis_config_location,
+    pattern = analysis_parameters$gatingTemplate,
     full.names = TRUE,
     ignore.case = TRUE
 )
 ```
-
 
 # AutoSpectral
 
@@ -74,30 +108,28 @@ Set the spectral cytometer settings
 #| label: Spectral Cytometer settings
 
 asp <- get.autospectral.param(cytometer = "aurora")
+control.dir <- single_color_control_folder
+control_filename <- list.files(
+  path = output_folder,
+  pattern = analysis_parameters$AutoSpectral_control_file_name,
+  full.names = TRUE,
+  ignore.case = TRUE
+)
 ```
 
 ### Create a control file
 
-
-There is a ShinyApp to help with the control process. 
-ONLY one (1) "AF" sample can be identified. This should be that patient the matrix will be used for. 
+There is a ShinyApp to help with the control process. ONLY one (1) "AF" sample can be identified. This should be that patient the matrix will be used for.
 
 ```{r}
 #| label: Shiny Helper App AutoSpectral. Creates and validates the control file. 
 #| eval: false
-shiny::runApp(appDir = datafolder, launch.browser = TRUE)
+shiny::runApp(appDir = input_folder, launch.browser = TRUE)
 ```
 
 This file was saved to the Data Folder initally, then manually moved to the Outputs folder (during testing)
 
-To do this the Manual Way: 
-
-```{r}
-#| label: filenames
-
-control.dir <- file.path(singlecolorcontrolsfolder)
-control_filename <- "fcs_control_file_Shiny" # change as desired or leave as default
-```
+To do this the Manual/programatic Way:
 
 ```{r}
 #| label: Create Control file manually
@@ -106,17 +138,16 @@ control_filename <- "fcs_control_file_Shiny" # change as desired or leave as def
 create.control.file(
   control.dir,
   asp,
-  output.dir = outputfolder,
-  filename = control_filename
+  output.dir = output_folder,
+  filename = analysis_parameters$AutoSpectral_control_file_name
 )
 ```
 
-If fluorophores exist in the `AutoSpectral` database they will be autofilled in the contol .csv. If not, you will need to manually add it in. 
+If fluorophores exist in the `AutoSpectral` database they will be autofilled in the contol .csv. If not, you will need to manually add it in.
 
 Structure of the Control File
 
-See Control File information here: [Control File- AutoSpectral](https://drcytometer.github.io/AutoSpectral/articles/02_Control_File_example.html)
-The main structural elements to the control file are the following columns. Note, we will be using the `get.spectra.automated()` function, so the "legacy" columns are not needed. Read more in linked article. 
+See Control File information here: [Control File- AutoSpectral](https://drcytometer.github.io/AutoSpectral/articles/02_Control_File_example.html) The main structural elements to the control file are the following columns. Note, we will be using the `get.spectra.automated()` function, so the "legacy" columns are not needed. Read more in linked article.
 
 - **filename**: The actual .fcs filename
 - **fluorophore**: The name of the fluorophore (or AF in case of the unstained)
@@ -125,33 +156,24 @@ The main structural elements to the control file are the following columns. Note
 - **control.type**: Whether the unmixing control is cells or beads (used for matching positive and negatives for background subtraction)
 - **universal.negative**: By default empty, if you want to use an universal negative, copy the filename of the corresponding unstained into this spot on a per fluorophore basis
 - large.gate: Logical value, by default FALSE, set to TRUE to expand the gating area
-- gate.name: Gate name for use in signature retrievel 
+- gate.name: Gate name for use in signature retrievel
 - gate.define: Logical, permits you to set the general gate region as defined by gate.name
-- is.viability: Whether your control is a viability dye. 
+- is.viability: Whether your control is a viability dye.
 
-Edit the file as necessary. I find this easiest within the .csv rather than programtically in R. In the future, we can add programtic edits. 
+Edit the file as necessary. I find this easiest within the .csv rather than programtically in R. In the future, we can add programtic edits.
 
-Now that the control file has been edited, lets maunally save it with the **"_updated"** suffix so it doesn't get overwritten in future runs of this script. 
+Now that the control file has been edited, lets maunally save it with the \*\*"\_updated"\*\* suffix so it doesn't get overwritten in future runs of this script.
 
 ### Validate control file
 
-This only needs to be done if the Shiny App was **NOT** used. 
-QC the control file:
+This only needs to be done if the Shiny App was **NOT** used. QC the control file:
 
 ```{r}
 #| label: Manual control file needs to be validated if before moving forward
 
-control_filename_updated <- paste0(
-  "Output/",
-  control_filename,
-  "_updated",
-  ".csv"
-)
-control_filename_updated
-
 issues <- check.control.file(
   control.dir,
-  control.def.file = control_filename_updated,
+  control.def.file = control_filename,
   asp
 )
 ```
@@ -164,16 +186,31 @@ Let's clean and extract our signatures
 #| label: Extract spectra
 #| eval: false
 
+control.dir <- normalizePath(control.dir, mustWork = TRUE)
+control_filename <- normalizePath(control_filename, mustWork = TRUE)
+
+with_dir(
+  outputfolder,
+  AutoSpectral::get.spectra.automated(
+    control.dir = control.dir,
+    control.def.file = control_filename,
+    asp = asp,
+    figures = TRUE,
+    verbose = FALSE
+  )
+)
+
 spectra <- get.spectra.automated(
   control.dir,
-  control.def.file = control_filename_updated,
-  asp
+  control.def.file = control_filename,
+  asp,
+  figures = TRUE,
+  verbose = FALSE
 )
 ```
 
-
-Figures are automatically created to QC this process. This should be a stopping point to ensure all looks good!
-
+Figures are automatically created to QC this process. The folders created from this step 
+This should be a stopping point to ensure all looks good!
 
 ### ADD A PRESENTATION OR PDF REPORT WITH IMPORTANT FIGURES GENERATED.
 
@@ -181,11 +218,10 @@ Figures are automatically created to QC this process. This should be a stopping 
 
 Let's create a "flow.control" object to feed dye names and markers into unmixing
 
-
 ```{r}
 #| label: create flow.control object and reload spectra if needed
 
-flow_control <- reload.flow.control(control.dir, control_filename_updated, asp)
+flow_control <- reload.flow.control(control.dir, control_filename, asp)
 
 spectra_folder <- list.files("table_spectra")
 spectra <- read.spectra(spectra.file = spectra_folder[1]) # to call spectra file back into R if needed
@@ -195,18 +231,6 @@ This is a complicated sample, let's leverage the per-cell and per-fluorophore ex
 
 Let's start with the AF extractions per pt
 
-
-```{r}
-#| label: patient per-cell AF extractions. Patient unstained locations - move to top of script
-
-Patient_unstained_samples <- list.files(
-  singlecolorcontrolsfolder,
-  pattern = "PT",
-  full.names = TRUE,
-  ignore.case = TRUE
-)
-
-```
 
 ```{r}
 #| label: Extract AF
@@ -226,7 +250,6 @@ af_file <- list.files("table_spectra")
 patient_af <- read.spectra(spectra.file = af_file[4])
 ```
 
-
 Test went well, let's move to per-cell fluorophore optimization
 
 ### ADD PRESENTATAION/REPORT TO VIEW AF SIGNATURES
@@ -237,10 +260,10 @@ Test went well, let's move to per-cell fluorophore optimization
 
 fluorophore_variants <- get.spectral.variants(
   control.dir = control.dir,
-  control.def.file = control_filename_updated,
+  control.def.file = control_filename,
   asp = asp,
   spectra = spectra,
-  output.dir = outputfolder
+  output.dir = output_folder
 )
 
 ```
@@ -248,7 +271,7 @@ fluorophore_variants <- get.spectral.variants(
 ```{r}
 #| label: to call back in
 spectral_variants_RDS <- list.files(
-  outputfolder,
+  output_folder,
   pattern = ".RDS",
   full.names = TRUE,
   ignore.case = TRUE
@@ -264,7 +287,7 @@ Now, let's put both pieces together to do the final unmix
 #| label: run full unmixing
 #| eval: false
 
-Patient_sample <- list.files(samplesfolder, full.names = TRUE)
+Patient_sample <- list.files(samples_folder, full.names = TRUE)
 
 unmix.fcs(
   fcs.file = Patient_sample[1], #one example
@@ -282,7 +305,9 @@ unmix.fcs(
 Now that we've completed the unmixing of one file, let's check our work!
 
 # QC unmixing
+
 ## automated gating set up
+
 Let's do some basic clean up gates prior to visualizing the NxN plot
 
 See how to write the gating Template [here](https://www.bioconductor.org/packages/3.24/bioc/vignettes/openCyto/inst/doc/HowToWriteCSVTemplate.html)
@@ -301,6 +326,7 @@ Template <- gatingTemplate(cleanup_gates)
 ```
 
 ### GatingSet and Transformation
+
 ```{r}
 #| label: Create GatingSet & transform
 
@@ -308,6 +334,82 @@ Template <- gatingTemplate(cleanup_gates)
 unmixed_files <- list.files(unmixed_folder, full.names = TRUE)
 
 unmixed_files
+
+# load in as a cytoset
+patient_cytoset <- load_cytoset_from_fcs(
+  unmixed_files,
+  truncate_max_range = FALSE,
+  transformation = FALSE
+)
+
+# create GatingSet for gates
+patient_GS <- GatingSet(patient_cytoset)
+```
+
+# QC unmixing
+
+## automated gating set up
+
+Let's do some basic clean up gates prior to visualizing the NxN plot
+
+See how to write the gating Template [here](https://www.bioconductor.org/packages/3.24/bioc/vignettes/openCyto/inst/doc/HowToWriteCSVTemplate.html)
+
+```{r}
+#| label: Load OpenCyto Gating Template
+
+GatingFolder <- file.path("openCytoGate")
+CleanUpGatingTemplateFile <- list.files(
+  GatingFolder,
+  pattern = ".csv",
+  full.names = TRUE
+)
+cleanup_gates <- data.table::fread(CleanUpGatingTemplateFile)
+Template <- gatingTemplate(cleanup_gates)
+```
+
+### GatingSet and Transformation
+
+```{r}
+#| label: Create GatingSet & transform
+
+# locate unmixed files
+unmixed_files <- list.files(unmixed_folder, full.names = TRUE)
+
+unmixed_files
+
+# load in as a cytoset
+patient_cytoset <- load_cytoset_from_fcs(
+  unmixed_files,
+  truncate_max_range = FALSE,
+  transformation = FALSE
+)
+
+# create GatingSet for gates
+patient_GS <- GatingSet(patient_cytoset)
+```
+
+# QC unmixing
+
+## automated gating set up
+
+Let's do some basic clean up gates prior to visualizing the NxN plot
+
+See how to write the gating Template [here](https://www.bioconductor.org/packages/3.24/bioc/vignettes/openCyto/inst/doc/HowToWriteCSVTemplate.html)
+
+```{r}
+#| label: Load OpenCyto Gating Template
+
+cleanup_gates <- data.table::fread(CleanUpGatingTemplateFile)
+Template <- gatingTemplate(cleanup_gates)
+```
+
+### GatingSet and Transformation
+
+```{r}
+#| label: Create GatingSet & transform
+
+# locate unmixed files
+unmixed_files <- list.files(unmixed_folder, full.names = TRUE)
 
 # load in as a cytoset
 patient_cytoset <- load_cytoset_from_fcs(
@@ -341,23 +443,27 @@ BiexTransformList <- transformerList(flurophores_only, Biexponential)
 transform(patient_GS, BiexTransformList)
 ```
 
-
 ```{r}
 #| label: View transformation
 
 Luciernaga::Utility_NbyNPlots(
     patient_GS,
-    sample.name = "GUID",
-    outpath = outputfolder,
+    sample.name = "TUBENAME",
+    outpath = output_folder,
     ycolumn = "SSC-A",
+    bins = 300,
     returntype = "patchwork"
 )
 
-ggcyto::ggcyto(patient_GS[1], subset = "root", aes(x = "FSC-A", y = "SSC-A")) +
-    geom_hex(bins = 300)
+ggcyto(patient_GS[1], subset = "root", aes(x = "FSC-A", y = "SSC-A")) +
+    geom_hex(bins = 1000)
+
+ggcyto(patient_GS[1], subset = "singletsSSC", aes(x = "FSC-A")) +
+    geom_histogram(bins = 1000)
 ```
 
 ### Apply automated gating scheme
+
 ```{r}
 #| label: Run automated gating
 
@@ -371,13 +477,12 @@ plot(patient_GS)
 
 Utility_GatingPlots(
   patient_GS,
-  sample.name = "GUID",
+  sample.name = "TUBENAME",
   gtFile = cleanup_gates,
   returnType = "patchwork",
   removestrings = ".fcs"
 )
 ```
-
 
 The gating is okay... let's see if we can adjust them.
 
@@ -414,13 +519,14 @@ Utility_GatingPlots(
 #| label: save gatingset
 #| eval: false
 
-gs_save_path <- file.path(outputfolder, "GatingSet")
+gs_save_path <- file.path(output_folder, "GatingSet")
 save_gs(patient_GS, path = gs_save_path)
 
 load_gs(gs_save_path)
 ```
 
 ## NxN plots
+
 Okay, I am happy with these gates. Now that they are applied, lets see the NxN plot
 
 ```{r}
@@ -433,7 +539,6 @@ Utility_NbyNPlots(
   bins = 300
 )
 ```
-
 
 #### PUT INTO A PRESENTATION
 
@@ -458,7 +563,6 @@ ff[, names(markernames(ff))]
 ```{r}
 library(CompensAID)
 ```
-
 
 ```{r}
 #| label: Run Compensaid and visualize

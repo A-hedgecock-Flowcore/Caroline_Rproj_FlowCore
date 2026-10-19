@@ -1,0 +1,8 @@
+input_folder: "Input"
+output_folder: "Output"
+single_color_controls_folder: "SCC"
+samples_folder: "Samples"
+unmixed_folder: "Unmixed_files"
+patient_sample_pattern: "PT"
+gatingTemplate: "gatingTemplate.csv"
+AutoSpectral_control_file_name: "fcs_control_file"

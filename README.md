@@ -13,3 +13,13 @@ Stated goals for this script are:
     3. report of clean up gating results
     4. report of clustering and dimReduction steps
     5. final report 
+
+
+## Set up
+The first time this script is run, install the envrionment onto computer:
+
+```{r}
+install.packages("renv")
+renv::restore()
+```
+

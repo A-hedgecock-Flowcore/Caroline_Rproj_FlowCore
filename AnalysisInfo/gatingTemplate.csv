@@ -1,4 +1,4 @@
 alias 	pop	parent	dims	gating_method	gating_args	collapseDataForGating	groupBy	preprocessing_method	preprocessing_args
-cells	+	root	FSC-A, SSC-A	boundary	min = c(0,0), max=c(4e6, 4e6)	FALSE	NA	NA	NA
+cells	+	root	FSC-A, SSC-A	boundary	min = c(0.5e6,0), max=c(4e6, 4e6)	FALSE	NA	NA	NA
 singletsFSC	+	cells	FSC-A,FSC-H	singletGate		FALSE	NA	NA	NA
 singletsSSC	+	singletsFSC	SSC-A,SSC-H	singletGate		FALSE	NA	NA	NA
