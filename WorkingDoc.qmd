@@ -28,6 +28,7 @@ renv::dependencies()
 ### To-Dos
 - enviornment init/ package checklist to transfer to new computer
 - update output folder for figures in AutoSpectral
+- Update and move ALL `file.paths()` to the file.paths code block
 
 
 ```{r}
@@ -46,7 +47,7 @@ library(flowGate)
 - Place all samples in the folder labelled "Samples"
 
 ```{r}
-#| label: setup
+#| label: file.paths
 
 # folder locations
 outputfolder <- file.path("Output")
@@ -65,7 +66,7 @@ Patient_unstained_samples <- list.files(
 ```
 
 
-## AutoSpectral
+# AutoSpectral
 
 Set the spectral cytometer settings
 
@@ -280,8 +281,8 @@ unmix.fcs(
 
 Now that we've completed the unmixing of one file, let's check our work!
 
-## QC unmixing
-### automated gating set up
+# QC unmixing
+## automated gating set up
 Let's do some basic clean up gates prior to visualizing the NxN plot
 
 See how to write the gating Template [here](https://www.bioconductor.org/packages/3.24/bioc/vignettes/openCyto/inst/doc/HowToWriteCSVTemplate.html)
@@ -419,7 +420,7 @@ save_gs(patient_GS, path = gs_save_path)
 load_gs(gs_save_path)
 ```
 
-### NxN plots
+## NxN plots
 Okay, I am happy with these gates. Now that they are applied, lets see the NxN plot
 
 ```{r}
@@ -429,14 +430,14 @@ Utility_NbyNPlots(
   sample.name = "GUID",
   gatesubset = "singletsSSC",
   ycolumn = "PE-Cy7-A",
-  bins = 250
+  bins = 300
 )
 ```
 
 
 #### PUT INTO A PRESENTATION
 
-#### CompensAID package
+## CompensAID package
 
 Is the comepsAID package useful?
 
