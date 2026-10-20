@@ -1,8 +1,8 @@
-input_folder: "Input"
-output_folder: "Output"
-single_color_controls_folder: "SCC"
-samples_folder: "Samples"
-unmixed_folder: "Unmixed_files"
+input_folder: "Input" # if changed, update folder name
+output_folder: "Output" # if changed, update folder name
+single_color_controls_folder: "SCC" # if changed, update folder name
+samples_folder: "Samples" # if changed, update folder name
+unmixed_folder: "Unmixed_files" # if changed, update folder name
 patient_sample_pattern: "PT"
 gatingTemplate: "gatingTemplate.csv"
 AutoSpectral_control_file_name: "fcs_control_file"

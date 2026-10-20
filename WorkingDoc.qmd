@@ -41,16 +41,13 @@ library(Luciernaga)
 library(openCyto)
 library(flowWorkspace)
 library(flowGate)
-library(yaml)
-library(here)
-library(fs)
-library(withr)
 ```
 
 - Update the `file.path()` if needed
   - Let's switch to something more flexible by using a .yml file to configure folder names
 - Place all the single color controls in the folder labelled "SCC"
 - Place all samples in the folder labelled "Samples"
+
 
 
 ```{r}
@@ -62,7 +59,7 @@ parameters_file <- list.files(
   "\\.yml$",
   full.names = TRUE
 )
-analysis_parameters <- read_yaml(parameters_file)
+analysis_parameters <- yaml::read_yaml(parameters_file)
 
 input_folder <- file.path(analysis_parameters$input_folder)
 output_folder <- file.path(analysis_parameters$output_folder)
@@ -186,26 +183,18 @@ Let's clean and extract our signatures
 #| label: Extract spectra
 #| eval: false
 
-control.dir <- normalizePath(control.dir, mustWork = TRUE)
-control_filename <- normalizePath(control_filename, mustWork = TRUE)
+full_control.dir <- normalizePath(control.dir, mustWork = TRUE)
+full_control_filename <- normalizePath(control_filename, mustWork = TRUE)
 
-with_dir(
-  outputfolder,
-  AutoSpectral::get.spectra.automated(
-    control.dir = control.dir,
-    control.def.file = control_filename,
+spectra <- withr::with_dir(
+  output_folder,
+  get.spectra.automated(
+    control.dir = full_control.dir,
+    control.def.file = full_control_filename,
     asp = asp,
     figures = TRUE,
     verbose = FALSE
   )
-)
-
-spectra <- get.spectra.automated(
-  control.dir,
-  control.def.file = control_filename,
-  asp,
-  figures = TRUE,
-  verbose = FALSE
 )
 ```
 
@@ -219,12 +208,21 @@ This should be a stopping point to ensure all looks good!
 Let's create a "flow.control" object to feed dye names and markers into unmixing
 
 ```{r}
-#| label: create flow.control object and reload spectra if needed
+#| label: create flow.control and reload spectra if needed
 
 flow_control <- reload.flow.control(control.dir, control_filename, asp)
 
-spectra_folder <- list.files("table_spectra")
-spectra <- read.spectra(spectra.file = spectra_folder[1]) # to call spectra file back into R if needed
+if (!exists("spectra", envir = .GlobalEnv)) {
+    table_spectra_folder <- file.path(output_folder, "table_spectra")
+
+    spectra_files <- list.files(table_spectra_folder, full.names = FALSE)
+    automated_spectra_file <- spectra_files[1] # make sure this is the correct file
+
+    spectra <- read.spectra(
+        spectra.file = automated_spectra_file,
+        spectra.dir = table_spectra_folder
+    )
+}
 ```
 
 This is a complicated sample, let's leverage the per-cell and per-fluorophore extraction to get best unmixing we can.
@@ -236,10 +234,23 @@ Let's start with the AF extractions per pt
 #| label: Extract AF
 #| eval: false
 
-patient_af <- get.af.spectra(
-  unstained.sample = Patient_unstained_samples[1],
-  asp = asp,
-  spectra = spectra
+plot.dir <- file.path(output_folder, "figure_autofluorscence")
+if (!exists("table_spectra_folder", envir = .GlobalEnv)) {
+  table_spectra_folder <- file.path(output_folder, "table_spectra")
+}
+
+pateint_af <- map(
+  Patient_unstained_samples,
+  \(sample) {
+    get.af.spectra(
+      unstained.sample = sample,
+      asp = asp,
+      spectra = spectra,
+      plot.dir = plot.dir,
+      table.dir = table_spectra_folder,
+      verbose = FALSE
+    )
+  }
 )
 ```
 

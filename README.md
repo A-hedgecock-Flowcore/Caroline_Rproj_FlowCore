@@ -23,3 +23,25 @@ install.packages("renv")
 renv::restore()
 ```
 
+Before running the pipeline, create this file structure:
+
+Input/
+├── SCC/
+└── Samples/
+└── app.r # this is the Shiny app that helps with the AutoSpectral control file
+
+AnalysisInfo/
+├── parameters.yml
+└── gatingTemplate.csv
+
+R/
+├── QCUnmix.R
+└── Unmix.R
+└── AnalysisPipeline.R
+
+Output/
+├── Unmix_files
+
+If the folder names are different than above, update the `parameters.yml` file. 
+
+The pipeline will create the required folders under Output/.
