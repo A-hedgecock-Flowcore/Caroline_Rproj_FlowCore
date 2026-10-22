@@ -107,6 +107,8 @@ create.control.file(
 
 If fluorophores exist in the `AutoSpectral` database they will be auto-filled in the control file. If not, you will need to manually add it in.
 
+The control file needs be checked for any glaring errors. This will also be run during the `AnalysisPipeline.R` in the `AutoSpectral.R` script.
+
 ```{r}
 #| label: Manual control file needs to be validated if before moving forward
 

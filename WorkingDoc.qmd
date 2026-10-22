@@ -274,7 +274,14 @@ flow_control <- reload.flow.control(control.dir, control_filename, asp)
 
 ```
 
-The above code looks really good - Let's chuck the flow.conrol here and this is the code we will use
+
+The above code looks really good - Let's chuck the flow.conrol here and this is the code we will use. 
+
+Taking it further- let's build a function to call in the final script later:
+
+```{r}
+
+```
 
 This is a complicated sample, let's leverage the per-cell and per-fluorophore extraction to get best unmixing we can.
 
@@ -299,6 +306,169 @@ patient_af <- map(
       verbose = FALSE
     )
   }
+)
+```
+
+
+Let's build helper functions to make the script running tidy!
+
+```{r}
+#| label: Code to extract af for missing patients
+
+#' Find the latest autofluorescence spectra file for a patient
+#'
+#' Searches the spectra output directory for autofluorescence spectra files
+#' associated with a specified patient ID. If multiple matching files exist,
+#' the most recently modified file is returned.
+#'
+#' @param patient_id Character string containing the patient identifier,
+#'   such as `"PT160"`.
+#' @param table_spectra_folder Character string specifying the directory
+#'   containing the autofluorescence spectra CSV files.
+#'
+#' @return A character string containing the path to the most recently
+#'   modified matching AF file. Returns `character(0)` if no matching file
+#'   is found.
+#'
+#' @details
+#' Matching filenames must contain the patient ID followed by
+#' `"Autofluorescence spectra"` and end in `.csv`.
+#'
+#' @examples
+#' \dontrun{
+#' latest_af_file(
+#'   patient_id = "PT160",
+#'   table_spectra_folder = "Output/table_spectra"
+#' )
+#' }
+
+latest_af_file <- function(patient_id, table_spectra_folder) {
+  af_files <- list.files(
+    path = table_spectra_folder,
+    pattern = paste0(
+      patient_id,
+      ".*Autofluorescence spectra.*\\.csv$"
+    ),
+    full.names = TRUE,
+    ignore.case = TRUE
+  )
+
+  if (length(af_files) == 0) {
+    return(character(0))
+  }
+
+  file_info <- file.info(af_files)
+
+  af_files[which.max(file_info$mtime)]
+}
+
+
+#' Extract or identify a patient's autofluorescence spectra
+#'
+#' Checks whether an autofluorescence spectra file already exists for the
+#' patient represented by an unstained sample. If a matching file exists,
+#' the most recently modified file is used. If no matching file exists,
+#' autofluorescence spectra are extracted using `get.af.spectra()`.
+#'
+#' @param sample Character string containing the path to one unstained
+#'   patient sample.
+#'
+#' @return A tibble with one row and two columns:
+#' \describe{
+#'   \item{patient_id}{The patient identifier extracted from the sample
+#'   filename.}
+#'   \item{af_file}{The path to the AF spectra file used or created.}
+#' }
+#'
+#' @details
+#' The sample filename must contain a patient identifier in the format
+#' `"PT"` followed by one or more digits, such as `"PT160"`.
+#'
+#' This function depends on the following objects being available in the
+#' calling environment:
+#' \describe{
+#'   \item{table_spectra_folder}{Directory for AF spectra CSV files.}
+#'   \item{asp}{AutoSpectral object.}
+#'   \item{spectra}{AutoSpectral spectra matrix.}
+#'   \item{plot.dir}{Directory for generated AF plots.}
+#' }
+#'
+#' @examples
+#' \dontrun{
+#' extract_af_if_missing(
+#'   "Input/SCC/PT160 unstained (Cells).fcs"
+#' )
+#' }
+
+extract_af_if_missing <- function(sample) {
+  patient_id <- str_extract(
+    basename(sample),
+    "PT[0-9]+"
+  )
+
+  if (is.na(patient_id)) {
+    stop("Could not identify patient ID in : ", basename(sample))
+  }
+
+  af_file <- latest_af_file(
+    patient_id = patient_id,
+    table_spectra_folder = table_spectra_folder
+  )
+
+  if (length(af_file) > 0) {
+    message(
+      "Using exisiting AF file for ",
+      patient_id,
+      ": ",
+      basename(af_file)
+    )
+  } else {
+    message(
+      "No AF file found for ",
+      patient_id,
+      ". Extracting AF spectra."
+    )
+
+    plot.dir <- file.path(output_folder, "figure_autofluorscence")
+
+    get.af.spectra(
+      unstained.sample = sample,
+      asp = asp,
+      spectra = spectra,
+      plot.dir = plot.dir,
+      table.dir = table_spectra_folder,
+      verbose = FALSE
+    )
+
+    # find newly created af file
+    af_file <- latest_af_file(
+      patient_id = patient_id,
+      table_spectra_folder = table_spectra_folder
+    )
+
+    if (length(af_file) == 0) {
+      stop(
+        "AF extraction completed, but no AF file found for :",
+        patient_id
+      )
+    }
+    message(
+      "Created AF file for ",
+      patient_id,
+      ": ",
+      basename(af_file)
+    )
+  }
+
+  tibble::tibble(
+    patient_id = patient_id,
+    af_file = af_file
+  )
+}
+
+af_matches <- map_dfr(
+  Patient_unstained_samples,
+  extract_af_if_missing
 )
 ```
 
