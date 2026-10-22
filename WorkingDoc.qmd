@@ -14,12 +14,12 @@ This script is created for **Caroline Stockwell** by Ayrianna Hedgecock at UNC F
 
 ## environment initialization
 
-> Run the below code block if this the the first time running analysis on the computer! See README.md
+> Run the below code block if this the the first time running analysis on the computer! **See README.md**
 
 This will be moved the the README and not inculded in final script.
 
 ```{r}
-#| label: Restore enviroment if needed
+#| label: Restore enviroment if needed - README
 #| eval: false
 
 install.packages("renv")
@@ -53,9 +53,9 @@ library(flowGate)
 ```{r}
 #| label: file paths
 
-analysis_config_location <- file.path("AnalysisInfo")
+analysisInfo_folder <- file.path("AnalysisInfo")
 parameters_file <- list.files(
-  analysis_config_location,
+  analysisInfo_folder,
   "\\.yml$",
   full.names = TRUE
 )
@@ -90,7 +90,7 @@ Patient_samples <- list.files(
 )
 
 CleanUpGatingTemplateFile <- list.files(
-    path = analysis_config_location,
+    path = analysisInfo_folder,
     pattern = analysis_parameters$gatingTemplate,
     full.names = TRUE,
     ignore.case = TRUE
