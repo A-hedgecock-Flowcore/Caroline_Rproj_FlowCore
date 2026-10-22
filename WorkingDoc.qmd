@@ -447,11 +447,33 @@ if (length(missing_af_files) > 0) {
 # Reorder AF files to match patient_af
 af_files <- af_files[names(patient_af)]
 
-# unmix
-Patient_samples # files to be unmixed
+```
 
-
-unmixTest <- function(sample) {
+```{r}
+#' Unmix a patient sample using matched autofluorescence spectra
+#'
+#' Extracts the patient ID from the sample filename, finds the corresponding
+#' autofluorescence spectra, reports the files being used, and runs AutoSpectral
+#' unmixing.
+#'
+#' @param sample Character string containing the path to one patient `.fcs` file.
+#'
+#' @return The result returned by `AutoSpectral::unmix.fcs()`.
+#'
+#' @details
+#' The sample filename must contain a patient identifier in the format
+#' `PT` followed by one or more digits, such as `PT160`.
+#'
+#' The object `patient_af` must be a named list of autofluorescence spectra,
+#' and `af_files` must be a named vector of AF filenames. Both must use
+#' patient IDs as names.
+#'
+#' @examples
+#' \dontrun{
+#' unmixTest(Patient_samples[3])
+#' }
+#'
+Unmix_match_af <- function(sample) {
   patient_id_sample <- str_extract(
     basename(sample),
     "PT[0-9]+"
@@ -498,9 +520,7 @@ unmixTest <- function(sample) {
   )
 }
 
-unmixTest(Patient_samples[1])
-
-walk(Patient_samples, unmixTest)
+walk(Patient_samples, Unmix_match_af)
 ```
 
 
