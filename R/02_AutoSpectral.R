@@ -1,4 +1,4 @@
-# Spectral Cytometry settings
+# AutoSpectral Variables
 asp <- get.autospectral.param(cytometer = "aurora")
 control.dir <- single_color_control_folder
 control_filename <- list.files(
@@ -6,6 +6,12 @@ control_filename <- list.files(
   pattern = analysis_parameters$AutoSpectral_control_file_name,
   full.names = TRUE,
   ignore.case = TRUE
+)
+table_spectra_folder <- file.path(output_folder, "table_spectra")
+existing_spectra_files <- list.files(
+  table_spectra_folder,
+  pattern = "^Automated_autospectral_spectra_[0-9]{8}_[0-9]{6}\\.csv$",
+  full.names = TRUE
 )
 
 # Validate control file
@@ -16,12 +22,6 @@ issues <- check.control.file(
 )
 
 # Spectral Extraction
-table_spectra_folder <- file.path(output_folder, "table_spectra")
-existing_spectra_files <- list.files(
-  table_spectra_folder,
-  pattern = "^Automated_autospectral_spectra_[0-9]{8}_[0-9]{6}\\.csv$",
-  full.names = TRUE
-)
 
 # does a spectra file already exist?
 if (base::length(existing_spectra_files) > 0) {
