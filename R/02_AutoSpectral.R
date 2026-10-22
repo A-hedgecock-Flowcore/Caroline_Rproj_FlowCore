@@ -14,90 +14,35 @@ existing_spectra_files <- list.files(
   full.names = TRUE
 )
 
+# R helper functions
+source(file.path("R", "latest_af_file.R"))
+source(file.path("R", "spectra_extraction.R"))
+source(file.path("R", "extract_af_if_missing.R"))
+source(file.path("R", "unmix_match_af.R"))
+
+
 # Validate control file
 issues <- check.control.file(
   control.dir = control.dir,
   control.def.file = control_filename,
-  asp
+  asp,
+  verbose = FALSE
 )
 
 # Spectral Extraction
 
-# does a spectra file already exist?
-if (base::length(existing_spectra_files) > 0) {
-  file_info <- file.info(existing_spectra_files)
-
-  # If several files exist, use the most recently modified one
-  latest_file <- rownames(
-    file_info[which.max(file_info$mtime), , drop = FALSE]
-  )
-
-  spectra <- read.spectra(
-    spectra.file = basename(latest_file),
-    spectra.dir = dirname(latest_file)
-  )
-  message("Using spectra file: ", basename(latest_file))
-} else {
-  # if no file exists, create
-  full_control.dir <- normalizePath(control.dir, mustWork = TRUE)
-  full_control_filename <- normalizePath(control_filename, mustWork = TRUE)
-
-  spectra <- withr::with_dir(
-    output_folder,
-    get.spectra.automated(
-      control.dir = full_control.dir,
-      control.def.file = full_control_filename,
-      asp = asp,
-      figures = TRUE,
-      verbose = FALSE
-    )
-  )
-  message("Created new AutoSpectral spectra.")
-}
+spectra <- spectra_extraction(
+  output_folder = output_folder,
+  control_dir = control.dir,
+  control_filename = control_filename,
+  asp = asp
+)
 
 # load in the AutoSpectral Control file made during set up (see README)
 flow_control <- reload.flow.control(control.dir, control_filename, asp)
 
 # Extract AF signatures from patient samples
-af_files <- list.files(
-  path = table_spectra_folder, # find exisitng af files
-  pattern = "Autofluorescence spectra.*\\.csv$",
-  full.names = FALSE,
-  ignore.case = TRUE
-)
-
-plot.dir <- file.path(output_folder, "figure_autofluorscence")
-
-patient_af <- map(
+af_matches <- map_dfr(
   Patient_unstained_samples,
-  \(sample) {
-    get.af.spectra(
-      unstained.sample = sample,
-      asp = asp,
-      spectra = spectra,
-      plot.dir = plot.dir,
-      table.dir = table_spectra_folder,
-      verbose = FALSE
-    )
-  }
+  extract_af_if_missing
 )
-
-# Extract fluorophore variants per-cell
-existing_variant_RDS <- list.files(
-  path = output_folder,
-  pattern = "\\.rds$",
-  full.names = TRUE
-)
-
-if (base::length(existing_variant_RDS) > 0) {
-  fluorophore_variants <- read_rds(existing_variant_RDS)
-  message("Using fluorophore variant file ", basename(existing_variant_RDS))
-} else {
-  fluorophore_variants <- get.spectral.variants(
-    control.dir = control.dir,
-    control.def.file = control_filename,
-    asp = asp,
-    spectra = spectra,
-    output.dir = output_folder
-  )
-}

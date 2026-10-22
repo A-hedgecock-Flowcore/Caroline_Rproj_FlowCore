@@ -45,10 +45,11 @@ spectra_extraction <- function(
       spectra.file = basename(latest_file),
       spectra.dir = dirname(latest_file)
     )
-    message(
+    cli::cli_alert_success(paste0(
       "Using spectra file: ",
-      basename(latest_file)
-    )
+      basename(latest_file),
+      " ."
+    ))
   } else {
     # if no file exists, create
     full_control_dir <- normalizePath(control.dir, mustWork = TRUE)
@@ -64,7 +65,7 @@ spectra_extraction <- function(
         verbose = FALSE
       )
     )
-    message("Created new spectra.")
+    cli::cli_alert_success("Created new spectra.")
   }
   return(spectra)
 }

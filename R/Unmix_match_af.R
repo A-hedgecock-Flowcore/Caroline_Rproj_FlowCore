@@ -21,7 +21,7 @@
 #' unmixTest(Patient_samples[3])
 #' }
 #'
-Unmix_match_af <- function(sample) {
+unmix_match_af <- function(sample) {
   patient_id_sample <- str_extract(
     basename(sample),
     "PT[0-9]+"
