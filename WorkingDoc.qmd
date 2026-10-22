@@ -116,7 +116,10 @@ control_filename <- list.files(
 
 ### Create a control file
 
+MOVE THIS SECTION TO README OR A SETUP FILE. should also explain folder structure. 
 There is a ShinyApp to help with the control process. ONLY one (1) "AF" sample can be identified. This should be that patient the matrix will be used for.
+
+**I should move this to the README as setup** Then the control filename will already be entered. 
 
 ```{r}
 #| label: Shiny Helper App AutoSpectral. Creates and validates the control file. 
@@ -209,14 +212,14 @@ Let's create a "flow.control" object to feed dye names and markers into unmixing
 
 ```{r}
 #| label: create flow.control and reload spectra if needed
-
+#| eval: false
 flow_control <- reload.flow.control(control.dir, control_filename, asp)
 
 if (!exists("spectra", envir = .GlobalEnv)) {
     table_spectra_folder <- file.path(output_folder, "table_spectra")
 
     spectra_files <- list.files(table_spectra_folder, full.names = FALSE)
-    automated_spectra_file <- spectra_files[1] # make sure this is the correct file
+    automated_spectra_file <- spectra_files[1] # make sure this is the correct file, it should be.
 
     spectra <- read.spectra(
         spectra.file = automated_spectra_file,
@@ -225,21 +228,66 @@ if (!exists("spectra", envir = .GlobalEnv)) {
 }
 ```
 
+Hmm, should it actually be, if the spectra doesn't exist in the files, then run the above code. IF it does then call it in... so something like:
+
+```{r}
+#| label: combine above code blocks
+
+table_spectra_folder <- file.path(output_folder, "table_spectra")
+existing_spectra_files <- list.files(
+  table_spectra_folder,
+  pattern = "^Automated_autospectral_spectra_[0-9]{8}_[0-9]{6}\\.csv$",
+  full.names = TRUE
+)
+
+if (base::length(existing_spectra_files) > 0) {
+  file_info <- file.info(existing_spectra_files)
+  # If several files exist, use the most recently modified one
+
+  latest_file <- rownames(
+    file_info[which.max(file_info$mtime), , drop = FALSE]
+  )
+
+  spectra <- read.spectra(
+    spectra.file = basename(latest_file),
+    spectra.dir = dirname(latest_file)
+  )
+  message("Using spectra file: ", basename(latest_file))
+} else {
+  # if no file exists, create
+  full_control.dir <- normalizePath(control.dir, mustWork = TRUE)
+  full_control_filename <- normalizePath(control_filename, mustWork = TRUE)
+
+  spectra <- withr::with_dir(
+    output_folder,
+    get.spectra.automated(
+      control.dir = full_control.dir,
+      control.def.file = full_control_filename,
+      asp = asp,
+      figures = TRUE,
+      verbose = FALSE
+    )
+  )
+}
+
+flow_control <- reload.flow.control(control.dir, control_filename, asp)
+
+```
+
+The above code looks really good - Let's chuck the flow.conrol here and this is the code we will use
+
 This is a complicated sample, let's leverage the per-cell and per-fluorophore extraction to get best unmixing we can.
 
 Let's start with the AF extractions per pt
 
 
 ```{r}
-#| label: Extract AF
+#| label: Extract AF from patient samples
 #| eval: false
 
 plot.dir <- file.path(output_folder, "figure_autofluorscence")
-if (!exists("table_spectra_folder", envir = .GlobalEnv)) {
-  table_spectra_folder <- file.path(output_folder, "table_spectra")
-}
 
-pateint_af <- map(
+patient_af <- map(
   Patient_unstained_samples,
   \(sample) {
     get.af.spectra(
@@ -254,13 +302,6 @@ pateint_af <- map(
 )
 ```
 
-```{r}
-#| label: to call af file back to R
-
-af_file <- list.files("table_spectra")
-patient_af <- read.spectra(spectra.file = af_file[4])
-```
-
 Test went well, let's move to per-cell fluorophore optimization
 
 ### ADD PRESENTATAION/REPORT TO VIEW AF SIGNATURES
@@ -269,14 +310,15 @@ Test went well, let's move to per-cell fluorophore optimization
 #| label: per-cell fluorophore optimization
 #| eval: false
 
-fluorophore_variants <- get.spectral.variants(
-  control.dir = control.dir,
-  control.def.file = control_filename,
-  asp = asp,
-  spectra = spectra,
-  output.dir = output_folder
-)
-
+if (!exists(fluorophore_variants, envir = .GlobalEnv)) {
+  fluorophore_variants <- get.spectral.variants(
+    control.dir = control.dir,
+    control.def.file = control_filename,
+    asp = asp,
+    spectra = spectra,
+    output.dir = output_folder
+  )
+}
 ```
 
 ```{r}
@@ -287,12 +329,41 @@ spectral_variants_RDS <- list.files(
   full.names = TRUE,
   ignore.case = TRUE
 )
+
 fluorophore_variants <- read_rds(spectral_variants_RDS)
 ```
 
-Now, let's put both pieces together to do the final unmix
+
+like above, let's combine the 3 blocks
+
+```{r}
+#| label: fluorophore optimization
+
+existing_variant_RDS <- list.files(
+  path = output_folder,
+  pattern = "\\.rds$",
+  full.names = TRUE
+)
+
+if (base::length(existing_variant_RDS) > 0) {
+  fluorophore_variants <- read_rds(existing_variant_RDS)
+  message("Using fluorophore variant file ", basename(existing_variant_RDS))
+} else {
+  fluorophore_variants <- get.spectral.variants(
+    control.dir = control.dir,
+    control.def.file = control_filename,
+    asp = asp,
+    spectra = spectra,
+    output.dir = output_folder
+  )
+}
+```
 
 ### ADD PRESENTATION/REPORT TO VIEW FLUOROPHORE VARIANTS
+
+
+Now, let's put both pieces together to do the final unmix
+
 
 ```{r}
 #| label: run full unmixing
@@ -312,6 +383,126 @@ unmix.fcs(
   output.dir = unmixed_folder
 )
 ```
+
+
+```{r}
+#| label: Apply unmixing to all the patients
+
+# link patient af files with PT names
+patient_ids_af <- str_extract(
+  basename(Patient_unstained_samples),
+  "PT[0-9]+"
+)
+
+if (anyNA(patient_ids_af)) {
+  stop("At least one unstained sample is missing a patient ID.")
+}
+
+names(patient_af) <- patient_ids_af
+
+# AF file names
+af_files <- list.files(
+  path = table_spectra_folder,
+  pattern = "Autofluorescence spectra.*\\.csv$",
+  full.names = FALSE,
+  ignore.case = TRUE
+)
+
+if (length(af_files) == 0) {
+  stop("No autofluorescence CSV files found in: ", table_spectra_folder)
+}
+
+af_patient_ids <- str_extract(
+  basename(af_files),
+  "PT[0-9]+"
+)
+
+if (anyNA(af_patient_ids)) {
+  stop("At least one AF filename is missing a patient ID.")
+}
+
+# Check for duplicate AF files
+if (anyDuplicated(af_patient_ids) > 0) {
+  duplicate_ids <- unique(
+    af_patient_ids[duplicated(af_patient_ids)]
+  )
+
+  stop(
+    "Multiple AF files found for: ",
+    paste(duplicate_ids, collapse = ", ")
+  )
+}
+
+names(af_files) <- af_patient_ids
+
+# Check that every PT has a corresponding AF file
+missing_af_files <- setdiff(names(patient_af), names(af_files))
+if (length(missing_af_files) > 0) {
+  stop(
+    "No AF file found for: ",
+    paste(missing_af_files, collapse = ", ")
+  )
+}
+
+# Reorder AF files to match patient_af
+af_files <- af_files[names(patient_af)]
+
+# unmix
+Patient_samples # files to be unmixed
+
+
+unmixTest <- function(sample) {
+  patient_id_sample <- str_extract(
+    basename(sample),
+    "PT[0-9]+"
+  )
+
+  if (is.na(patient_id_sample)) {
+    stop(
+      "Could not identify patient ID in sample: ",
+      basename(sample)
+    )
+  }
+
+  if (!patient_id_sample %in% names(patient_af)) {
+    stop("No AF spectra found for patient: ", patient_id_sample)
+  }
+
+  af_for_patient <- patient_af[[patient_id_sample]]
+  af_file_used <- af_files[[patient_id_sample]]
+
+  message("Unmixing sample: ", basename(sample))
+  message("Using AF file: ", basename(af_file_used))
+
+  cli::cli_alert_success(
+    paste("Unmixing sample:", basename(sample))
+  )
+
+  cli::cli_alert_success(
+    paste("Using AF file:", basename(af_file_used))
+  )
+
+  AutoSpectral::unmix.fcs(
+    fcs.file = sample,
+    spectra = spectra,
+    asp = asp,
+    flow.control = flow_control,
+    method = "AutoSpectral",
+    af.spectra = af_for_patient,
+    spectra.variants = fluorophore_variants,
+    speed = "slow",
+    output.dir = unmixed_folder,
+    verbose = FALSE,
+    pipeline = "joint",
+    estimate.time = FALSE
+  )
+}
+
+unmixTest(Patient_samples[1])
+
+walk(Patient_samples, unmixTest)
+```
+
 
 Now that we've completed the unmixing of one file, let's check our work!
 
