@@ -46,3 +46,33 @@ af_matches <- map_dfr(
   Patient_unstained_samples,
   extract_af_if_missing
 )
+
+# Fluorophore Variant extraction
+existing_variant_RDS <- list.files(
+  path = output_folder,
+  pattern = "Spectral_variants.rds$",
+  full.names = TRUE,
+  ignore.case = TRUE
+)
+
+if (base::length(existing_variant_RDS) > 0) {
+  latest_variant_file <- existing_variant_RDS[
+    which.max(file.info(existing_variant_RDS)$mtime)
+  ]
+
+  fluorophore_variants <- read_rds(latest_variant_file)
+  message("Using fluorophore variant file ", basename(latest_variant_file))
+} else {
+  fluorophore_variants <- withr::with_dir(
+    output_folder,
+    get.spectral.variants(
+      control.dir = normalizePath(control.dir, mustWork = TRUE),
+      control.def.file = normalizePath(control_filename, mustWork = TRUE),
+      asp = asp,
+      spectra = spectra,
+      output.dir = ".",
+      verbose = FALSE
+    )
+  )
+  cli::cli_alert_success("Created new fluorophore variants file:")
+}
