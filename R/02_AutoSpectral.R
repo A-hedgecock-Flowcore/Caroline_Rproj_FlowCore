@@ -2,7 +2,7 @@
 asp <- get.autospectral.param(cytometer = "aurora")
 control.dir <- single_color_control_folder
 control_filename <- list.files(
-  path = output_folder,
+  path = analysisInfo_folder,
   pattern = analysis_parameters$AutoSpectral_control_file_name,
   full.names = TRUE,
   ignore.case = TRUE
@@ -12,6 +12,12 @@ existing_spectra_files <- list.files(
   table_spectra_folder,
   pattern = "^Automated_autospectral_spectra_[0-9]{8}_[0-9]{6}\\.csv$",
   full.names = TRUE
+)
+existing_variant_RDS <- list.files(
+  path = output_folder,
+  pattern = "Spectral_variants\\.rds$",
+  full.names = TRUE,
+  ignore.case = TRUE
 )
 
 # R helper functions
@@ -30,7 +36,6 @@ issues <- check.control.file(
 )
 
 # Spectral Extraction
-
 spectra <- spectra_extraction(
   output_folder = output_folder,
   control_dir = control.dir,
@@ -48,13 +53,6 @@ af_matches <- map_dfr(
 )
 
 # Fluorophore Variant extraction
-existing_variant_RDS <- list.files(
-  path = output_folder,
-  pattern = "Spectral_variants.rds$",
-  full.names = TRUE,
-  ignore.case = TRUE
-)
-
 if (base::length(existing_variant_RDS) > 0) {
   latest_variant_file <- existing_variant_RDS[
     which.max(file.info(existing_variant_RDS)$mtime)
@@ -66,13 +64,13 @@ if (base::length(existing_variant_RDS) > 0) {
   fluorophore_variants <- withr::with_dir(
     output_folder,
     get.spectral.variants(
-      control.dir = normalizePath(control.dir, mustWork = TRUE),
-      control.def.file = normalizePath(control_filename, mustWork = TRUE),
+      control.dir = fs::path_abs(control.dir, start = ".."),
+      control.def.file = fs::path_abs(control_filename, start = ".."),
       asp = asp,
       spectra = spectra,
       output.dir = ".",
       verbose = FALSE
     )
   )
-  cli::cli_alert_success("Created new fluorophore variants file:")
+  cli::cli_alert_success("Created new fluorophore variants file.")
 }
