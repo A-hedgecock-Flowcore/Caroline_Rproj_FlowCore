@@ -37,8 +37,6 @@ library(flowWorkspace)
 library(flowGate)
 library(CompensAID)
 
-# Pull R functions
-
 # file paths
 analysisInfo_folder <- file.path("AnalysisInfo")
 parameters_file <- list.files(

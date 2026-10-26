@@ -1028,6 +1028,36 @@ ff <- cytoframe_to_flowFrame(gated_data_flowframe)
 ff[, names(markernames(ff))]
 ```
 
+
+```{r}
+#| label: function for getting a flowframe
+get_gated_flowFrame <- function(
+  gating_set,
+  sample_index,
+  population = "singletsSSC",
+  inverse_transform = FALSE,
+  markers_only = TRUE
+) {
+  gated_cytoframe <- gh_pop_get_data(
+    gating_set[[sample_index]],
+    y = population,
+    inverse.transform = inverse_transform
+  )
+
+  flow_frame <- cytoframe_to_flowFrame(
+    gated_cytoframe
+  )
+
+  if (markers_only) {
+    flow_frame <- flow_frame[, names(markernames(flow_frame))]
+  }
+
+  return(flow_frame)
+}
+
+ff <- get_gated_flowFrame(PT_gs, sample_index = 3)
+```
+
 ```{r}
 library(CompensAID)
 ```
@@ -1071,6 +1101,116 @@ walk(compensaid_plots, print)
 ```
 
 This is potentially very powerful!
+
+Let's make a function:
+
+```{r}
+#| label: function of compensAID 
+
+run_compensaid <- function(
+  flow_frame,
+  sample_name = NULL,
+  ssi_threshold = -1,
+  print_plots = TRUE
+) {
+  if (is.null(sample_name)) {
+    sample_name <- "Unnamed sample"
+  }
+
+  message("Running compensAID for: ", sample_name)
+
+  compensaid_results <- CompensAID::CompensAID(flow_frame, events.value = 100)
+
+  compensaid_matrix <- CompensAID::PlotMatrix(compensaid_results)
+
+  ssi_matrix <- compensaid_results$matrix
+
+  flagged_index <- which(
+    ssi_matrix < ssi_threshold,
+    arr.ind = TRUE
+  )
+
+  if (nrow(flagged_index) == 0) {
+    message(
+      "No SSI values below ",
+      ssi_threshold,
+      " found for: ",
+      sample_name
+    )
+
+    flagged_pairs <- tibble::tibble(
+      primary.channel = character(),
+      secondary.channel = character(),
+      primary.marker = character(),
+      secondary.marker = character()
+    )
+
+    compensaid_plots <- list()
+  } else {
+    channel_names <- rownames(ssi_matrix)
+    marker_names <- flowCore::markernames(flow_frame)
+    parameter_names <- flowCore::colnames(flow_frame)
+
+    flagged_pairs <- tibble::tibble(
+      primary.channel = channel_names[
+        flagged_index[, "col"]
+      ],
+      secondary.channel = channel_names[
+        flagged_index[, "row"]
+      ]
+    ) |>
+      mutate(
+        primary.marker = marker_names[
+          match(primary.channel, parameter_names)
+        ],
+        secondary.marker = marker_names[
+          match(secondary.channel, parameter_names)
+        ]
+      )
+
+    compensaid_plots <- purrr::pmap(
+      flagged_pairs[
+        c("primary.marker", "secondary.marker")
+      ],
+      \(primary.marker, secondary.marker) {
+        CompensAID::PlotDotSSI(
+          compensaid_results,
+          flow_frame,
+          primary = primary.marker,
+          secondary = secondary.marker,
+          showScores = TRUE
+        )
+      }
+    )
+
+    if (print_plots) {
+      purrr::walk(
+        compensaid_plots,
+        print
+      )
+    }
+  }
+
+  list(
+    sample_name = sample_name,
+    compensaid_results = compensaid_results,
+    compensaid_matrix = compensaid_matrix,
+    flagged_pairs = flagged_pairs,
+    compensaid_plots = compensaid_plots
+  )
+}
+
+PT_compensaid_results <- purrr::imap(
+  PT_flowframes[1],
+  \(flow_frame, sample_name) {
+    run_compensaid(
+      flow_frame = flow_frame,
+      sample_name = sample_name,
+      print_plots = TRUE
+    )
+  }
+)
+```
 
 # Environment Information
 
