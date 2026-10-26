@@ -74,3 +74,12 @@ if (base::length(existing_variant_RDS) > 0) {
   )
   cli::cli_alert_success("Created new fluorophore variants file.")
 }
+
+# Unmix all patient samples with match AF and fluorophore vairants
+walk(Patient_samples, unmix_match_af)
+
+# Unmix any additional samples that are not patient samples
+PT_unmixed_files <- list.files(
+  path = unmixed_folder,
+  full.names = FALSE
+)

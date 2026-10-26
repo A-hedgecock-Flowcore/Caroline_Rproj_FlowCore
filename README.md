@@ -29,6 +29,8 @@ renv::restore()
 
 Before running the pipeline, make sure this file structure is intact:
 
+**FIX WHEN COMPLETE**
+
 **Input**/
 
 ├── SCC/ \# single color controls

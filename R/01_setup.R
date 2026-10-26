@@ -71,6 +71,15 @@ Patient_samples <- list.files(
   ignore.case = TRUE
 )
 
+All_samples <- list.files(
+  samples_folder,
+  full.names = TRUE
+)
+
+nonpatient_samples <- All_samples[
+  !str_detect(All_samples, analysis_parameters$patient_sample_pattern)
+]
+
 CleanUpGatingTemplateFile <- list.files(
   path = analysisInfo_folder,
   pattern = analysis_parameters$gatingTemplate,
