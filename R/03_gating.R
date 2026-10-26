@@ -5,15 +5,26 @@ Template <- gatingTemplate(cleanup_gates)
 # Create GatingSets
 AutoSpectral_unmixed_files <- list.files(
   path = unmixed_folder,
-  pattern = "AutoSpectral",
-  full.names = TRUE
+  pattern = "AutoSpectral\\.fcs$",
+  full.names = TRUE,
+  ignore.case = TRUE
 )
 
 unmixed_controls <- list.files(
   path = unmixed_folder,
-  pattern = "FastPoisson",
-  full.names = TRUE
+  pattern = "FastPoisson\\.fcs$",
+  full.names = TRUE,
+  ignore.case = TRUE
 )
+
+## Make sure there are files where they are supposed to be
+if (length(AutoSpectral_unmixed_files) == 0) {
+  stop("No AutoSpectral-unmixed files found in: ", unmixed_folder)
+}
+
+if (length(unmixed_controls) == 0) {
+  warning("No FastPoisson control files found in: ", unmixed_folder)
+}
 
 PT_cs <- load_cytoset_from_fcs(
   AutoSpectral_unmixed_files,
@@ -35,7 +46,7 @@ controls_gs <- GatingSet(controls_cs)
 parameters <- colnames(PT_gs)
 flurophores_only <- parameters[!str_detect(parameters, "Time|FSC|SSC|Index")]
 
-# transformation
+### transformation
 Biexponential <- flowjo_biexp_trans(
   channelRange = 4096,
   maxValue = 262144,
@@ -51,7 +62,7 @@ transform(PT_gs, BiexTransformList)
 parameters <- colnames(controls_gs)
 flurophores_only <- parameters[!str_detect(parameters, "Time|FSC|SSC|Index")]
 
-# transformation
+### transformation
 Biexponential <- flowjo_biexp_trans(
   channelRange = 4096,
   maxValue = 262144,
@@ -100,13 +111,16 @@ controls_cleanup_GatingPlots <- Utility_GatingPlots(
 )
 
 # Save GatingSet
-gs_save_path <- file.path(output_folder, "GatingSet")
-save_gs(PT_gs, path = gs_save_path)
+PT_gs_save_path <- file.path(output_folder, "PT_GatingSet")
+save_gs(PT_gs, path = PT_gs_save_path)
+
+controls_gs_save_path <- file.path(output_folder, "controls_GatingSet")
+save_gs(controls_gs, path = controls_gs_save_path)
 
 # NxN after gating
 PT_cleanup_nxn_GatingPlots <- Utility_NbyNPlots(
   PT_gs,
-  sample.name = "GUID",
+  sample.name = "TUBENAME",
   gatesubset = "singletsSSC",
   ycolumn = "PE-Cy7-A",
   bins = 500
@@ -114,7 +128,7 @@ PT_cleanup_nxn_GatingPlots <- Utility_NbyNPlots(
 
 controls_cleanup_nxn_GatingPlots <- Utility_NbyNPlots(
   controls_gs,
-  sample.name = "GUID",
+  sample.name = "TUBENAME",
   gatesubset = "singletsSSC",
   ycolumn = "PE-Cy7-A",
   bins = 500
