@@ -34,7 +34,6 @@ controls_gs <- GatingSet(controls_cs)
 ## PT_gs
 parameters <- colnames(PT_gs)
 flurophores_only <- parameters[!str_detect(parameters, "Time|FSC|SSC|Index")]
-flurophores_only
 
 # transformation
 Biexponential <- flowjo_biexp_trans(
@@ -51,7 +50,6 @@ transform(PT_gs, BiexTransformList)
 ## Controls_gs
 parameters <- colnames(controls_gs)
 flurophores_only <- parameters[!str_detect(parameters, "Time|FSC|SSC|Index")]
-flurophores_only
 
 # transformation
 Biexponential <- flowjo_biexp_trans(
@@ -66,11 +64,58 @@ BiexTransformList <- transformerList(flurophores_only, Biexponential)
 transform(controls_gs, BiexTransformList)
 
 # Ungated NxN
-ungated_nxn <- Luciernaga::Utility_NbyNPlots(
+PT_ungated_nxn <- Utility_NbyNPlots(
   PT_gs,
   sample.name = "TUBENAME",
   outpath = output_folder,
   ycolumn = "PE-Cy7-A", # CD45
   bins = 500,
   returntype = "patchwork"
+)
+controls_ungated_nxn <- Utility_NbyNPlots(
+  controls_gs,
+  sample.name = "TUBENAME",
+  outpath = output_folder,
+  ycolumn = "PE-Cy7-A", # CD45
+  bins = 500,
+  returntype = "patchwork"
+)
+
+# Cleaup Gates
+gt_gating(Template, PT_gs)
+PT_cleanup_GatingPlots <- Utility_GatingPlots(
+  PT_gs,
+  sample.name = "TUBENAME",
+  gtFile = cleanup_gates,
+  returnType = "patchwork",
+  removestrings = ".fcs"
+)
+gt_gating(Template, controls_gs)
+controls_cleanup_GatingPlots <- Utility_GatingPlots(
+  controls_gs,
+  sample.name = "TUBENAME",
+  gtFile = cleanup_gates,
+  returnType = "patchwork",
+  removestrings = ".fcs"
+)
+
+# Save GatingSet
+gs_save_path <- file.path(output_folder, "GatingSet")
+save_gs(PT_gs, path = gs_save_path)
+
+# NxN after gating
+PT_cleanup_nxn_GatingPlots <- Utility_NbyNPlots(
+  PT_gs,
+  sample.name = "GUID",
+  gatesubset = "singletsSSC",
+  ycolumn = "PE-Cy7-A",
+  bins = 500
+)
+
+controls_cleanup_nxn_GatingPlots <- Utility_NbyNPlots(
+  controls_gs,
+  sample.name = "GUID",
+  gatesubset = "singletsSSC",
+  ycolumn = "PE-Cy7-A",
+  bins = 500
 )
