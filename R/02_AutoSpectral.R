@@ -83,3 +83,26 @@ PT_unmixed_files <- list.files(
   path = unmixed_folder,
   full.names = FALSE
 )
+
+samples_to_unmix <- nonpatient_samples[
+  !basename(nonpatient_samples) %in% basename(PT_unmixed_files)
+]
+
+walk(
+  samples_to_unmix,
+  \(sample) {
+    unmix.fcs(
+      fcs.file = sample,
+      spectra = spectra,
+      asp = asp,
+      flow.control = flow_control,
+      method = "FastPoisson", # not Autospectral; does not conduct per-cell AF extraction. Double check this is fine for controls
+      spectra.variants = fluorophore_variants,
+      speed = "slow",
+      output.dir = unmixed_folder,
+      verbose = FALSE,
+      pipeline = "joint",
+      estimate.time = FALSE
+    )
+  }
+)
