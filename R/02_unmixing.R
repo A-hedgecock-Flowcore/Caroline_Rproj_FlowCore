@@ -79,14 +79,19 @@ if (base::length(existing_variant_RDS) > 0) {
 walk(Patient_samples, unmix_match_af)
 
 # Unmix any additional samples that are not patient samples
-PT_unmixed_files <- list.files(
+unmixed_files <- list.files(
   path = unmixed_folder,
   full.names = FALSE
 )
 
-samples_to_unmix <- nonpatient_samples[
-  !basename(nonpatient_samples) %in% basename(PT_unmixed_files)
-]
+unmixed_files_names <- paste0(
+  tools::file_path_sans_ext(basename(nonpatient_samples)),
+  " FastPoisson.fcs" # Change if method below changes
+)
+
+samples_to_unmix <- basename(nonpatient_samples[
+  !unmixed_files_names %in% unmixed_files
+])
 
 walk(
   samples_to_unmix,
@@ -96,12 +101,9 @@ walk(
       spectra = spectra,
       asp = asp,
       flow.control = flow_control,
-      method = "FastPoisson", # not Autospectral; does not conduct per-cell AF extraction. Double check this is fine for controls
-      spectra.variants = fluorophore_variants,
-      speed = "slow",
+      method = "FastPoisson", # not Autospectral; does not conduct per-cell AF extraction. Double check this is fine for controls. Change above if needed.
       output.dir = unmixed_folder,
       verbose = FALSE,
-      pipeline = "joint",
       estimate.time = FALSE
     )
   }

@@ -57,6 +57,7 @@ single_color_control_folder <- file.path(
 samples_folder <- file.path(input_folder, analysis_parameters$samples_folder)
 unmixed_folder <- file.path(output_folder, analysis_parameters$unmixed_folder)
 
+
 Patient_unstained_samples <- list.files(
   single_color_control_folder,
   pattern = analysis_parameters$patient_sample_pattern,

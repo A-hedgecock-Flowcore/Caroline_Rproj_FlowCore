@@ -784,7 +784,6 @@ See how to write the gating Template [here](https://www.bioconductor.org/package
 ```{r}
 #| label: Load OpenCyto Gating Template
 
-GatingFolder <- file.path("openCytoGate")
 CleanUpGatingTemplateFile <- list.files(
   GatingFolder,
   pattern = ".csv",
