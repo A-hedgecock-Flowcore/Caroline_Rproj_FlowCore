@@ -168,7 +168,7 @@ message(
   length(Patient_samples),
   " patient samples, ",
   length(Patient_unstained_samples),
-  " patinet unstained samples, and ",
+  " patient unstained samples, and ",
   length(nonpatient_samples),
   " nonpatient samples."
 )

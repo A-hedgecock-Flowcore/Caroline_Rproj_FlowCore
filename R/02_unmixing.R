@@ -96,6 +96,38 @@ af_matches <- map_dfr(
   extract_af_if_missing
 )
 
+if (length(Patient_unstained_samples) == 0) {
+  af_matches <- tibble::tibble(
+    patient_id = character(),
+    af_file = character(),
+    af_status = character(),
+    af_reason = character()
+  )
+} else {
+  af_matches <- purrr::map_dfr(
+    Patient_unstained_samples,
+    extract_af_if_missing
+  )
+}
+
+af_status_file <- file.path(
+  output_folder,
+  "patient_af_status.csv"
+)
+
+readr::write_csv(
+  af_matches,
+  af_status_file
+)
+
+message(
+  "Patient AF summary: ",
+  sum(af_matches$af_status == "available"),
+  " available; ",
+  sum(af_matches$af_status == "flagged"),
+  " flagged."
+)
+
 # Fluorophore Variant extraction
 if (base::length(existing_variant_RDS) > 0) {
   latest_variant_file <- existing_variant_RDS[
@@ -168,53 +200,61 @@ samples_to_unmix <- nonpatient_samples[
   !unmixed_files_names %in% unmixed_files
 ]
 
-nonpatient_unmix_status <- purrr::map_dfr(
-  samples_to_unmix,
-  function(sample) {
-    sample_name <- basename(sample)
+if (length(samples_to_unmix) == 0) {
+  nonpatient_unmix_status <- tibble::tibble(
+    sample = character(),
+    status = character(),
+    reason = character()
+  )
+} else {
+  nonpatient_unmix_status <- purrr::map_dfr(
+    samples_to_unmix,
+    function(sample) {
+      sample_name <- basename(sample)
 
-    error <- tryCatch(
-      {
-        unmix.fcs(
-          fcs.file = sample,
-          spectra = spectra,
-          asp = asp,
-          flow.control = flow_control,
-          method = "FastPoisson",
-          output.dir = unmixed_folder,
-          verbose = FALSE,
-          estimate.time = FALSE
+      unmix_error <- tryCatch(
+        {
+          AutoSpectral::unmix.fcs(
+            fcs.file = sample,
+            spectra = spectra,
+            asp = asp,
+            flow.control = flow_control,
+            method = "FastPoisson",
+            output.dir = unmixed_folder,
+            verbose = FALSE,
+            estimate.time = FALSE
+          )
+
+          NULL
+        },
+        error = function(e) {
+          e
+        }
+      )
+
+      if (is.null(unmix_error)) {
+        tibble::tibble(
+          sample = sample_name,
+          status = "completed",
+          reason = NA_character_
+        )
+      } else {
+        warning(
+          "FastPoisson unmixing failed for ",
+          sample_name,
+          ": ",
+          conditionMessage(unmix_error)
         )
 
-        NULL
-      },
-      error = function(e) {
-        e
+        tibble::tibble(
+          sample = sample_name,
+          status = "failed",
+          reason = conditionMessage(unmix_error)
+        )
       }
-    )
-
-    if (is.null(error)) {
-      tibble::tibble(
-        sample = sample_name,
-        status = "completed",
-        reason = NA_character_
-      )
-    } else {
-      warning(
-        "FastPoisson unmixing failed for ",
-        sample_name,
-        ": ",
-        conditionMessage(error)
-      )
-
-      tibble::tibble(
-        sample = sample_name,
-        status = "failed",
-        reason = conditionMessage(error)
-      )
     }
-  }
-)
+  )
+}
 
 nonpatient_unmix_status_file <- file.path(
   output_folder,
@@ -225,11 +265,3 @@ readr::write_csv(
   nonpatient_unmix_status,
   nonpatient_unmix_status_file
 )
-
-if (length(samples_to_unmix) == 0) {
-  nonpatient_unmix_status <- tibble::tibble(
-    sample = character(),
-    status = character(),
-    reason = character()
-  )
-}

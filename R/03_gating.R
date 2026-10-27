@@ -19,14 +19,19 @@ unmixed_controls <- list.files(
 
 ## Make sure there are files where they are supposed to be
 if (length(AutoSpectral_unmixed_files) == 0) {
-  stop("No AutoSpectral-unmixed files found in: ", unmixed_folder)
-} else {
-  PT_cs <- load_cytoset_from_fcs(
-    AutoSpectral_unmixed_files,
-    truncate_max_range = FALSE,
-    transformation = FALSE
+  stop(
+    "No AutoSpectral-unmixed files found in: ",
+    unmixed_folder
   )
 }
+
+PT_cs <- load_cytoset_from_fcs(
+  AutoSpectral_unmixed_files,
+  truncate_max_range = FALSE,
+  transformation = FALSE
+)
+
+PT_gs <- GatingSet(PT_cs)
 
 if (length(unmixed_controls) == 0) {
   warning(
@@ -34,6 +39,7 @@ if (length(unmixed_controls) == 0) {
     unmixed_folder,
     ". Control gating and control compensAID will be skipped."
   )
+
   controls_gs <- NULL
 } else {
   controls_cs <- load_cytoset_from_fcs(
@@ -41,11 +47,9 @@ if (length(unmixed_controls) == 0) {
     truncate_max_range = FALSE,
     transformation = FALSE
   )
+
+  controls_gs <- GatingSet(controls_cs)
 }
-
-PT_gs <- GatingSet(PT_cs)
-controls_gs <- GatingSet(controls_cs)
-
 # Transform data
 ## PT_gs
 parameters <- colnames(PT_gs)
@@ -150,19 +154,30 @@ if (!is.null(controls_gs)) {
   )
 }
 
+# conditionally save plots
+qc_gating_plots_file <- file.path(
+  output_folder,
+  "qc_gating_plots.rds"
+)
+
+qc_gating_plots <- list(
+  PT_ungated_NxN = PT_ungated_nxn,
+  PT_cleanup_gating = PT_cleanup_GatingPlots,
+  PT_cleaned_NxN = PT_cleanup_nxn_GatingPlots
+)
+
+if (!is.null(controls_gs)) {
+  qc_gating_plots$controls_ungated_NxN <- controls_ungated_nxn
+  qc_gating_plots$controls_cleanup_gating <- controls_cleanup_GatingPlots
+  qc_gating_plots$controls_cleaned_NxN <- controls_cleanup_nxn_GatingPlots
+}
+
 qc_gating_plots_file <- file.path(
   output_folder,
   "qc_gating_plots.rds"
 )
 
 saveRDS(
-  list(
-    PT_ungated_NxN = PT_ungated_nxn,
-    controls_ungated_NxN = controls_ungated_nxn,
-    PT_cleanup_gating = PT_cleanup_GatingPlots,
-    controls_cleanup_gating = controls_cleanup_GatingPlots,
-    PT_cleaned_NxN = PT_cleanup_nxn_GatingPlots,
-    controls_cleaned_NxN = controls_cleanup_nxn_GatingPlots
-  ),
+  qc_gating_plots,
   file = qc_gating_plots_file
 )

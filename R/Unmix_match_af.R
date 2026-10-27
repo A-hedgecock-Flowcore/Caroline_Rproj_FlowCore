@@ -105,8 +105,11 @@ unmix_match_af <- function(sample) {
     )
 
   if (nrow(af_match) == 0) {
+    reason <- "No matching patient AF record"
+
     warning(
-      "No AF spectra found for ",
+      reason,
+      " for ",
       patient_id_sample,
       ". Skipping sample: ",
       sample_name
@@ -115,14 +118,17 @@ unmix_match_af <- function(sample) {
     return(
       make_status(
         status = "flagged",
-        reason = "No matching patient AF spectra"
+        reason = reason
       )
     )
   }
 
   if (nrow(af_match) > 1) {
+    reason <- "Multiple matching patient AF records"
+
     warning(
-      "Multiple AF spectra found for ",
+      reason,
+      " for ",
       patient_id_sample,
       ". Skipping sample: ",
       sample_name
@@ -131,7 +137,31 @@ unmix_match_af <- function(sample) {
     return(
       make_status(
         status = "flagged",
-        reason = "Multiple matching patient AF spectra"
+        reason = reason
+      )
+    )
+  }
+
+  if (
+    is.na(af_match$af_file[[1]]) ||
+      !identical(af_match$af_status[[1]], "available")
+  ) {
+    reason <- af_match$af_reason[[1]]
+
+    if (is.na(reason) || !nzchar(reason)) {
+      reason <- "Patient AF spectra are unavailable"
+    }
+
+    warning(
+      reason,
+      " Skipping sample: ",
+      sample_name
+    )
+
+    return(
+      make_status(
+        status = "flagged",
+        reason = reason
       )
     )
   }

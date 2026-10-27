@@ -6,7 +6,7 @@
 #' generated using `AutoSpectral::get.spectra.automated()`.
 #'
 #' @param output_folder Character string specifying the main output directory.
-#' @param control.dir Character string specifying the AutoSpectral control
+#' @param control_dir Character string specifying the AutoSpectral control
 #'   directory.
 #' @param control_filename Character string specifying the AutoSpectral
 #'   control definition file.
@@ -21,9 +21,9 @@
 #'
 #' @examples
 #' \dontrun{
-#' spectra <- load_or_create_spectra(
+#' spectra <- spectra_extraction(
 #'   output_folder = "Output",
-#'   control.dir = "Input/SCC",
+#'   control_dir = "Input/SCC",
 #'   control_filename = "Input/AnalysisInfo/fcs_control_file",
 #'   asp = asp
 #' )

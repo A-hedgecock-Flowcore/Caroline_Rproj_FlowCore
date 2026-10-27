@@ -92,18 +92,18 @@ tryCatch(
     message("Start time: ", pipeline_start_time)
 
     message("Running setup")
-    source(file.path("R", "01_setup.R"))
+    source(file.path(project_root, "R", "01_setup.R"))
 
     message(
       "Running Autospectral unmixing with per-patient, per-cell AF extraction and fluorophore variants"
     )
-    source(file.path("R", "02_unmixing.R"))
+    source(file.path(project_root, "R", "02_unmixing.R"))
 
     message("Running automated cleanup gating")
-    source(file.path("R", "03_gating.R"))
+    source(file.path(project_root, "R", "03_gating.R"))
 
     message("Running compensAID package for unmixing evaluation")
-    source(file.path("R", "04_compensAID.R"))
+    source(file.path(project_root, "R", "04_compensAID.R"))
 
     message("Pipeline stages completed")
   },
@@ -193,6 +193,11 @@ pipeline_summary <- list(
     },
     nonpatient_unmixing = if (exists("nonpatient_unmix_status_file")) {
       nonpatient_unmix_status_file
+    } else {
+      NA_character_
+    },
+    af_status = if (exists("af_status_file")) {
+      af_status_file
     } else {
       NA_character_
     },
