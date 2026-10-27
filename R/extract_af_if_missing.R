@@ -32,7 +32,7 @@
 extract_af_if_missing <- function(sample) {
   patient_id <- str_extract(
     basename(sample),
-    "PT[0-9]+"
+    analysis_parameters$patient_id_pattern
   )
 
   if (is.na(patient_id)) {

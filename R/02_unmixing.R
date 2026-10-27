@@ -26,7 +26,6 @@ source(file.path("R", "spectra_extraction.R"))
 source(file.path("R", "extract_af_if_missing.R"))
 source(file.path("R", "unmix_match_af.R"))
 
-
 # Validate control file
 issues <- check.control.file(
   control.dir = control.dir,
@@ -45,6 +44,39 @@ spectra <- spectra_extraction(
 
 # load in the AutoSpectral Control file made during set up (see README)
 flow_control <- reload.flow.control(control.dir, control_filename, asp)
+
+# Validate patient samples have matching unstained sample
+patient_ids_from_samples <- stringr::str_extract(
+  basename(Patient_samples),
+  analysis_parameters$patient_id_pattern
+) |>
+  stats::na.omit() |>
+  unique()
+
+patient_ids_from_af <- stringr::str_extract(
+  basename(Patient_unstained_samples),
+  analysis_parameters$patient_id_pattern
+) |>
+  stats::na.omit() |>
+  unique()
+
+missing_af_patients <- setdiff(
+  patient_ids_from_samples,
+  patient_ids_from_af
+)
+
+if (length(missing_af_patients) > 0) {
+  warning(
+    "Some patient samples do not have matching unstained samples. ",
+    "Those samples will be flagged and skipped: ",
+    paste(missing_af_patients, collapse = ", ")
+  )
+}
+
+message(
+  "Validated patient autofluorescence samples for: ",
+  paste(patient_ids_from_samples, collapse = ", ")
+)
 
 # Extract AF signatures from patient samples
 af_matches <- map_dfr(
@@ -76,7 +108,38 @@ if (base::length(existing_variant_RDS) > 0) {
 }
 
 # Unmix all patient samples with match AF and fluorophore vairants
-walk(Patient_samples, unmix_match_af)
+patient_unmix_status <- purrr::map_dfr(
+  Patient_samples,
+  unmix_match_af
+)
+
+## save unmixing status results for QC report
+patient_unmix_status_file <- file.path(
+  output_folder,
+  "patient_unmixing_status.csv"
+)
+readr::write_csv(
+  patient_unmix_status,
+  patient_unmix_status_file
+)
+
+## unmixing patient run summary
+message(
+  "Patient unmixing summary: ",
+  sum(patient_unmix_status$status == "completed"),
+  " completed; ",
+  sum(patient_unmix_status$status == "flagged"),
+  " flagged; ",
+  sum(patient_unmix_status$status == "failed"),
+  " failed."
+)
+if (!any(patient_unmix_status$status == "completed")) {
+  warning(
+    "No patient samples were successfullt unmixed. ",
+    "Review: ",
+    patient_unmix_status_file
+  )
+}
 
 # Unmix any additional samples that are not patient samples
 unmixed_files <- list.files(

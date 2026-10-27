@@ -42,23 +42,73 @@ analysisInfo_folder <- file.path("AnalysisInfo")
 parameters_file <- list.files(
   analysisInfo_folder,
   "\\.yml$",
-  full.names = TRUE
+  full.names = TRUE,
+  ignore.case = TRUE
 )
+
+if (length(parameters_file) != 1) {
+  stop(
+    "Expected exactly one (1) .yml (YAML) parameter file in ",
+    analysisInfo_folder,
+    ". Found ",
+    length(parameters_file),
+    "."
+  )
+}
+
 analysis_parameters <- yaml::read_yaml(parameters_file)
 
 input_folder <- file.path(analysis_parameters$input_folder)
+
 output_folder <- file.path(analysis_parameters$output_folder)
+
 single_color_control_folder <- file.path(
   input_folder,
   analysis_parameters$single_color_controls_folder
 )
-samples_folder <- file.path(input_folder, analysis_parameters$samples_folder)
-unmixed_folder <- file.path(output_folder, analysis_parameters$unmixed_folder)
 
+samples_folder <- file.path(
+  input_folder,
+  analysis_parameters$samples_folder
+)
+
+unmixed_folder <- file.path(
+  output_folder,
+  analysis_parameters$unmixed_folder
+)
+
+required_input_dirs <- c(
+  single_color_control_folder,
+  samples_folder
+)
+
+missing_input_dirs <- required_input_dirs[!dir.exists(required_input_dirs)]
+
+if (length(missing_input_dirs) > 0) {
+  stop(
+    "Missing input directories: ",
+    paste(missing_input_dirs, collapse = ", ")
+  )
+}
+
+required_output_directories <- c(
+  output_folder,
+  unmixed_folder,
+  file.path(output_folder, "table_spectra"),
+  file.path(output_folder, "compensAID"),
+  file.path(output_folder, "logs")
+)
+
+purrr::walk(
+  required_output_directories,
+  dir.create,
+  showWarnings = FALSE,
+  recursive = TRUE
+)
 
 Patient_unstained_samples <- list.files(
   single_color_control_folder,
-  pattern = analysis_parameters$patient_sample_pattern,
+  pattern = analysis_parameters$patient_unstained_pattern,
   full.names = TRUE,
   ignore.case = TRUE
 )
@@ -72,11 +122,16 @@ Patient_samples <- list.files(
 
 All_samples <- list.files(
   samples_folder,
-  full.names = TRUE
+  pattern = "\\.fcs$",
+  full.names = TRUE,
+  ignore.case = TRUE
 )
 
 nonpatient_samples <- All_samples[
-  !str_detect(All_samples, analysis_parameters$patient_sample_pattern)
+  !str_detect(
+    basename(All_samples),
+    analysis_parameters$patient_id_pattern
+  )
 ]
 
 CleanUpGatingTemplateFile <- list.files(
@@ -84,4 +139,36 @@ CleanUpGatingTemplateFile <- list.files(
   pattern = analysis_parameters$gatingTemplate,
   full.names = TRUE,
   ignore.case = TRUE
+)
+
+if (length(CleanUpGatingTemplateFile) != 1) {
+  stop(
+    "Expected exactly one gating template file. Found ",
+    length(CleanUpGatingTemplateFile),
+    "."
+  )
+}
+
+if (length(Patient_samples) == 0) {
+  warning(
+    "No patient samples were found in: ",
+    samples_folder
+  )
+}
+
+if (length(All_samples) == 0) {
+  stop(
+    "No .fcs files were found in: ",
+    samples_folder
+  )
+}
+
+message(
+  "Setup complete: ",
+  length(Patient_samples),
+  " patient samples, ",
+  length(Patient_unstained_samples),
+  " patinet unstained samples, and ",
+  length(nonpatient_samples),
+  " nonpatient samples."
 )
