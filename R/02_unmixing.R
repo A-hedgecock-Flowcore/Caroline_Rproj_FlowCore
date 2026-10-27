@@ -91,11 +91,6 @@ message(
 )
 
 # Extract AF signatures from patient samples
-af_matches <- map_dfr(
-  Patient_unstained_samples,
-  extract_af_if_missing
-)
-
 if (length(Patient_unstained_samples) == 0) {
   af_matches <- tibble::tibble(
     patient_id = character(),
@@ -179,7 +174,7 @@ message(
 )
 if (!any(patient_unmix_status$status == "completed")) {
   warning(
-    "No patient samples were successfullt unmixed. ",
+    "No patient samples were successfully unmixed. ",
     "Review: ",
     patient_unmix_status_file
   )
