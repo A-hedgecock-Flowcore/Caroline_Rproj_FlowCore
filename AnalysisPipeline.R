@@ -12,15 +12,21 @@
 # Or from a terminal:
 #   Rscript AnalysisPipeline.R
 
-pipeline_start_time <- format(
-  lubridate::now(
-    "%Y%m%%d_%H%M%S"
-  )
+options(
+  stringsAsFactors = FALSE,
+  warn = 1
 )
 
-project_root <- normalizePath(getwd(), mustWork = TRUE)
+pipeline_start_time <- Sys.time()
 
-if (!file.exists(file.path(project_root, "AnalysisInfo"))) {
+pipeline_start_timestamp <- format(
+  pipeline_start_time,
+  "%Y%m%d_%H%M%S"
+)
+
+project_root <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
+
+if (!dir.exists(file.path(project_root, "AnalysisInfo"))) {
   stop(
     "This script must be run from the project root. ",
     "Could not find AnalysisInfo/ in: ",
@@ -53,6 +59,7 @@ if (length(missing_directories) > 0) {
 }
 
 log_directory <- file.path(project_root, "Output", "logs")
+
 dir.create(
   log_directory,
   recursive = TRUE,
@@ -63,7 +70,7 @@ pipeline_log_file <- file.path(
   log_directory,
   paste0(
     "pipeline_",
-    pipeline_start_time,
+    pipeline_start_timestamp,
     ".log"
   )
 )
@@ -82,7 +89,7 @@ tryCatch(
   {
     message("Starting analysis pipeline")
     message("Project root: ", project_root)
-    message("Start time: ", format(pipeline_start_time))
+    message("Start time: ", pipeline_start_time)
 
     message("Running setup")
     source(file.path("R", "01_setup.R"))
@@ -120,11 +127,7 @@ tryCatch(
   }
 )
 
-pipline_end_time <- format(
-  lubridate::now(
-    "%Y%m%%d_%H%M%S"
-  )
-)
+pipeline_end_time <- Sys.time()
 
 pipeline_status <- if (is.null(pipeline_error)) {
   "completed"
@@ -133,7 +136,7 @@ pipeline_status <- if (is.null(pipeline_error)) {
 }
 
 pipeline_summary <- list(
-  status = pipline_status,
+  status = pipeline_status,
   start_time = pipeline_start_time,
   end_time = pipeline_end_time,
   duration_minutes = as.numeric(
@@ -164,7 +167,7 @@ pipeline_summary <- list(
     } else {
       character()
     },
-    nonpatient_samples <- if (exists("nonpatient_samples")) {
+    nonpatient_samples = if (exists("nonpatient_samples")) {
       nonpatient_samples
     } else {
       character()
@@ -188,24 +191,28 @@ pipeline_summary <- list(
     } else {
       NA_character_
     },
+    nonpatient_unmixing = if (exists("nonpatient_unmix_status_file")) {
+      nonpatient_unmix_status_file
+    } else {
+      NA_character_
+    },
     qc_gating_plots = file.path(
-      # ADD THIS
       project_root,
       "Output",
-      qc_gating_plots.rds
+      "qc_gating_plots.rds"
+    ),
+    patient_compensaid = file.path(
+      project_root,
+      "Output",
+      "compensAID",
+      "PT_compensaid_results.rds"
+    ),
+    controls_compensaid = file.path(
+      project_root,
+      "Output",
+      "compensAID",
+      "controls_compensaid_results.rds"
     )
-  ),
-  patient_compensaid = file.path(
-    project_root,
-    "Output",
-    "compensAID",
-    "PT_compensaid_results.rds"
-  ),
-  controls_compensaid = file.path(
-    project_root,
-    "Output",
-    "compensAID",
-    "controls_compensaid_results.rds"
   )
 )
 

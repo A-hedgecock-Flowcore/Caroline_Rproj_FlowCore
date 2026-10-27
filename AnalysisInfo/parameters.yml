@@ -5,8 +5,8 @@ samples_folder: "Samples" # if changed, update folder name
 unmixed_folder: "Unmixed_files" # if changed, update folder name
 
 patient_id_pattern: "PT[0-9]+"
-patient_sample_pattern: "^PT[0-9]+.*\\.fcs$" #regEx of patient samples- adjust as necessary 
-patient_unstained_pattern: "^PT[0-9]+.*unstained.*\\.fcs$" 
+patient_sample_pattern: "^.*PT[0-9]+.*\\.fcs$"
+patient_unstained_pattern: "^PT[0-9]+.*unstained.*\\.fcs$"
 
 gatingTemplate: "gatingTemplate.csv"
 AutoSpectral_control_file_name: "fcs_control_file"

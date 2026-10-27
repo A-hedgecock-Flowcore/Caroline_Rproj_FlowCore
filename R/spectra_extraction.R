@@ -34,6 +34,17 @@ spectra_extraction <- function(
   control_filename,
   asp
 ) {
+  spectra_folder <- file.path(
+    output_folder,
+    "table_spectra"
+  )
+
+  existing_spectra_files <- list.files(
+    path = spectra_folder,
+    pattern = "^Automated_autospectral_spectra_[0-9]{8}_[0-9]{6}\\.csv$",
+    full.names = TRUE
+  )
+
   if (base::length(existing_spectra_files) > 0) {
     file_info <- file.info(existing_spectra_files)
 

@@ -7,6 +7,18 @@ control_filename <- list.files(
   full.names = TRUE,
   ignore.case = TRUE
 )
+
+if (length(control_filename) != 1) {
+  stop(
+    "Expected exactly one AutoSpectral control file matching pattern '",
+    analysis_parameters$AutoSpectral_control_file_name,
+    "'. Found ",
+    length(control_filename),
+    " file(s): ",
+    paste(basename(control_filename), collapse = ", ")
+  )
+}
+
 table_spectra_folder <- file.path(output_folder, "table_spectra")
 existing_spectra_files <- list.files(
   table_spectra_folder,
@@ -152,22 +164,72 @@ unmixed_files_names <- paste0(
   " FastPoisson.fcs" # Change if method below changes
 )
 
-samples_to_unmix <- basename(nonpatient_samples[
+samples_to_unmix <- nonpatient_samples[
   !unmixed_files_names %in% unmixed_files
-])
+]
 
-walk(
+nonpatient_unmix_status <- purrr::map_dfr(
   samples_to_unmix,
-  \(sample) {
-    unmix.fcs(
-      fcs.file = sample,
-      spectra = spectra,
-      asp = asp,
-      flow.control = flow_control,
-      method = "FastPoisson", # not Autospectral; does not conduct per-cell AF extraction. Double check this is fine for controls. Change above if needed.
-      output.dir = unmixed_folder,
-      verbose = FALSE,
-      estimate.time = FALSE
+  function(sample) {
+    sample_name <- basename(sample)
+
+    error <- tryCatch(
+      {
+        unmix.fcs(
+          fcs.file = sample,
+          spectra = spectra,
+          asp = asp,
+          flow.control = flow_control,
+          method = "FastPoisson",
+          output.dir = unmixed_folder,
+          verbose = FALSE,
+          estimate.time = FALSE
+        )
+
+        NULL
+      },
+      error = function(e) {
+        e
+      }
     )
+
+    if (is.null(error)) {
+      tibble::tibble(
+        sample = sample_name,
+        status = "completed",
+        reason = NA_character_
+      )
+    } else {
+      warning(
+        "FastPoisson unmixing failed for ",
+        sample_name,
+        ": ",
+        conditionMessage(error)
+      )
+
+      tibble::tibble(
+        sample = sample_name,
+        status = "failed",
+        reason = conditionMessage(error)
+      )
+    }
   }
 )
+
+nonpatient_unmix_status_file <- file.path(
+  output_folder,
+  "nonpatient_unmixing_status.csv"
+)
+
+readr::write_csv(
+  nonpatient_unmix_status,
+  nonpatient_unmix_status_file
+)
+
+if (length(samples_to_unmix) == 0) {
+  nonpatient_unmix_status <- tibble::tibble(
+    sample = character(),
+    status = character(),
+    reason = character()
+  )
+}

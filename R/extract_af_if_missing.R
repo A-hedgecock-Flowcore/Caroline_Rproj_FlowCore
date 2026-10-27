@@ -46,7 +46,7 @@ extract_af_if_missing <- function(sample) {
 
   if (length(af_file) > 0) {
     message(
-      "Using exisiting AF file for ",
+      "Using existing AF file for ",
       patient_id,
       ": ",
       basename(af_file)
@@ -58,7 +58,7 @@ extract_af_if_missing <- function(sample) {
       ". Extracting AF spectra."
     )
 
-    plot.dir <- file.path(output_folder, "figure_autofluorscence")
+    plot.dir <- file.path(output_folder, "figure_autofluorescence")
 
     get.af.spectra(
       unstained.sample = sample,
