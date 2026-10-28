@@ -1,0 +1,1103 @@
+---
+title: "Flow Cytometry Analysis QC Report"
+subtitle: "Automated Pipeline: AutoSpectral, gating, and compensAID review"
+author: "Ayrianna Hedgecock, UNC Flow Cytometry Core Facility"
+date: last-modified
+toc: true
+toc-depth: 3
+number-sections: true
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-location: left
+    code-fold: true
+    code-tools: true
+    embed-resources: false
+    self-contained: false
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: true
+---
+
+<style>
+.qc-carousel {
+  position: relative;
+  width: 100%;
+  margin: 1rem 0 2rem 0;
+  padding: 0 3.5rem;
+  box-sizing: border-box;
+}
+
+.qc-carousel-window {
+  overflow: hidden;
+  width: 100%;
+  border: 1px solid #d9d9d9;
+  border-radius: 0.5rem;
+  background: #fafafa;
+}
+
+.qc-carousel-track {
+  display: flex;
+  transition: transform 0.3s ease-in-out;
+}
+
+.qc-carousel-slide {
+  min-width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.qc-carousel-slide img {
+  display: block;
+  max-width: 100%;
+  height: 32rem;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+.qc-carousel-caption {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #555;
+  overflow-wrap: anywhere;
+}
+
+.qc-carousel-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  border-radius: 50%;
+  background: #2c3e50;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.qc-carousel-button:hover {
+  background: #1a252f;
+}
+
+.qc-carousel-button.previous {
+  left: 0.25rem;
+}
+
+.qc-carousel-button.next {
+  right: 0.25rem;
+}
+
+.qc-carousel-counter {
+  margin-top: 0.5rem;
+  text-align: center;
+  color: #666;
+  font-size: 0.85rem;
+}
+</style>
+
+<script>
+function qcCarouselMove(carouselId, direction) {
+  const carousel = document.getElementById(carouselId);
+
+  if (!carousel) {
+    return;
+  }
+
+  const track = carousel.querySelector(".qc-carousel-track");
+  const slides = carousel.querySelectorAll(".qc-carousel-slide");
+  const counter = carousel.querySelector(".qc-carousel-counter");
+
+  if (slides.length === 0) {
+    return;
+  }
+
+  let currentIndex = Number(carousel.dataset.currentIndex || 0);
+
+  currentIndex = currentIndex + direction;
+
+  if (currentIndex < 0) {
+    currentIndex = slides.length - 1;
+  }
+
+  if (currentIndex >= slides.length) {
+    currentIndex = 0;
+  }
+
+  carousel.dataset.currentIndex = currentIndex;
+  track.style.transform = "translateX(-" + (currentIndex * 100) + "%)";
+  counter.textContent = (currentIndex + 1) + " / " + slides.length;
+}
+</script>
+
+```{r}
+#| label: setup
+
+message("Setup: checking report packages")
+flush.console()
+
+required_report_packages <- c(
+  "dplyr",
+  "readr",
+  "tibble",
+  "purrr",
+  "stringr",
+  "knitr",
+  "fs",
+  "htmltools"
+)
+
+missing_report_packages <- required_report_packages[
+  !vapply(
+    required_report_packages,
+    requireNamespace,
+    quietly = TRUE,
+    FUN.VALUE = logical(1)
+  )
+]
+
+if (length(missing_report_packages) > 0) {
+  stop(
+    "Missing packages required to render the QC report: ",
+    paste(missing_report_packages, collapse = ", ")
+  )
+}
+message("Setup: checking output folder")
+flush.console()
+
+output_folder <- file.path("Output")
+
+if (!dir.exists(output_folder)) {
+  stop(
+    "Output folder does not exist: ",
+    output_folder,
+    "\nRun AnalysisPipeline.R before rendering the QC report"
+  )
+}
+
+variants_folder <- file.path(
+  output_folder,
+  "variants"
+)
+
+autofluorescence_folder <- file.path(
+  output_folder,
+  "figure_autofluorescence"
+)
+
+scatter_folder <- file.path(
+  output_folder,
+  "figure_scatter"
+)
+
+similarity_folder <- file.path(
+  output_folder,
+  "figure_similarity_heatmap"
+)
+
+spectra_folder <- file.path(
+  output_folder,
+  "figure_spectra"
+)
+
+clean_controls_folder <- file.path(
+  output_folder,
+  "figure_clean_controls"
+)
+
+variant_images <- sort(list.files(
+  variants_folder,
+  pattern = "_variants\\.jpg$",
+  full.names = TRUE,
+  ignore.case = TRUE
+))
+
+autofluorescence_images <- sort(list.files(
+  autofluorescence_folder,
+  pattern = "\\.(jpg|jpeg|png)$",
+  full.names = TRUE,
+  ignore.case = TRUE
+))
+
+scatter_images <- sort(list.files(
+  scatter_folder,
+  pattern = "\\.(jpg|jpeg|png)$",
+  full.names = TRUE,
+  ignore.case = TRUE
+))
+
+similarity_images <- sort(list.files(
+  similarity_folder,
+  pattern = "\\.(jpg|jpeg|png)$",
+  full.names = TRUE,
+  ignore.case = TRUE
+))
+
+spectra_images <- sort(list.files(
+  spectra_folder,
+  pattern = "\\.(jpg|jpeg|png)$",
+  full.names = TRUE,
+  ignore.case = TRUE
+))
+
+clean_control_images <- sort(list.files(
+  clean_controls_folder,
+  pattern = "\\.(jpg|jpeg|png)$",
+  full.names = TRUE,
+  ignore.case = TRUE
+))
+
+message("Setup: reading pipeline summary")
+flush.console()
+
+pipeline_summary_file <- file.path(
+  output_folder,
+  "pipeline_summary.rds"
+)
+
+pipeline_summary <- if (file.exists(pipeline_summary_file)) {
+  readRDS(pipeline_summary_file)
+} else {
+  NULL
+}
+
+message("Setup: reading AF status")
+flush.console()
+
+patient_af_status_file <- file.path(
+  output_folder,
+  "patient_af_status.csv"
+)
+
+message("Setup: reading unmixing status files")
+flush.console()
+
+patient_unmixing_status_file <- file.path(
+  output_folder,
+  "patient_unmixing_status.csv"
+)
+
+nonpatient_unmixing_status_file <- file.path(
+  output_folder,
+  "nonpatient_unmixing_status.csv"
+)
+
+message("Setup: reading gating plots")
+flush.console()
+
+qc_gating_plots_file <- file.path(
+  output_folder,
+  "qc_gating_plots.rds"
+)
+
+message("Setup: reading compensAID results")
+flush.console()
+
+patient_compensaid_file <- file.path(
+  output_folder,
+  "compensAID",
+  "PT_compensaid_results.rds"
+)
+
+controls_compensaid_file <- file.path(
+  output_folder,
+  "compensAID",
+  "controls_compensaid_results.rds"
+)
+
+read_status_table <- function(path) {
+  if (!file.exists(path)) {
+    return(NULL)
+  }
+
+  readr::read_csv(
+    path,
+    show_col_types = FALSE
+  )
+}
+
+af_status <- read_status_table(patient_af_status_file)
+patient_unmixing_status <- read_status_table(
+  patient_unmixing_status_file
+)
+nonpatient_unmixing_status <- read_status_table(
+  nonpatient_unmixing_status_file
+)
+
+gating_plots <- if (file.exists(qc_gating_plots_file)) {
+  readRDS(qc_gating_plots_file)
+} else {
+  NULL
+}
+
+patient_compensaid_results <- if (file.exists(patient_compensaid_file)) {
+  readRDS(patient_compensaid_file)
+} else {
+  NULL
+}
+
+controls_compensaid_results <- if (file.exists(controls_compensaid_file)) {
+  readRDS(controls_compensaid_file)
+} else {
+  NULL
+}
+
+status_badge <- function(status) {
+  if (identical(status, "completed")) {
+    return("✅ Completed")
+  }
+
+  if (identical(status, "failed")) {
+    return("❌ Failed")
+  }
+
+  if (identical(status, "flagged")) {
+    return("⚠️ Flagged")
+  }
+
+  "Unknown"
+}
+
+count_status <- function(data, status) {
+  if (is.null(data) || nrow(data) == 0) {
+    return(0L)
+  }
+
+  sum(data$status == status, na.rm = TRUE)
+}
+
+compensaid_summary <- function(results) {
+  if (is.null(results) || length(results) == 0) {
+    return(tibble::tibble(
+      sample = character(),
+      flagged_pairs = integer(),
+      review_status = character()
+    ))
+  }
+
+  purrr::imap_dfr(
+    results,
+    function(result, sample_name) {
+      flagged_pairs <- result$flagged_pairs
+
+      n_flagged <- if (is.null(flagged_pairs)) {
+        0L
+      } else {
+        nrow(flagged_pairs)
+      }
+
+      tibble::tibble(
+        sample = sample_name,
+        flagged_pairs = n_flagged,
+        review_status = if (n_flagged > 0) {
+          "Review"
+        } else {
+          "No flagged pairs"
+        }
+      )
+    }
+  )
+}
+
+patient_compensaid_summary <- compensaid_summary(
+  patient_compensaid_results
+)
+
+controls_compensaid_summary <- compensaid_summary(
+  controls_compensaid_results
+)
+
+make_image_carousel <- function(
+  image_files,
+  carousel_id,
+  title = NULL,
+  image_height = "32rem"
+) {
+  image_files <- image_files[file.exists(image_files)]
+
+  if (length(image_files) == 0) {
+    return(
+      htmltools::HTML(
+        "<p>No images were found for this section.</p>"
+      )
+    )
+  }
+
+  image_files <- normalizePath(
+    image_files,
+    winslash = "/",
+    mustWork = TRUE
+  )
+
+  # Convert absolute paths to paths relative to the report directory.
+  image_sources <- fs::path_rel(
+    image_files,
+    start = getwd()
+  )
+
+  image_sources <- gsub(
+    "\\\\",
+    "/",
+    image_sources
+  )
+
+  escape_html <- function(x) {
+    x <- gsub("&", "&amp;", x, fixed = TRUE)
+    x <- gsub("<", "&lt;", x, fixed = TRUE)
+    x <- gsub(">", "&gt;", x, fixed = TRUE)
+    x <- gsub("\"", "&quot;", x, fixed = TRUE)
+    x
+  }
+
+  slides <- purrr::map2_chr(
+    image_sources,
+    basename(image_files),
+    function(image_source, image_label) {
+      paste0(
+        '<div class="qc-carousel-slide">',
+        '<img src="',
+        escape_html(image_source),
+        '" alt="',
+        escape_html(image_label),
+        '" style="height:',
+        image_height,
+        ';">',
+        '<div class="qc-carousel-caption">',
+        escape_html(image_label),
+        "</div>",
+        "</div>"
+      )
+    }
+  )
+
+  title_html <- if (is.null(title)) {
+    ""
+  } else {
+    paste0("<h4>", escape_html(title), "</h4>")
+  }
+
+  html <- paste0(
+    '<div class="qc-carousel" id="',
+    escape_html(carousel_id),
+    '">',
+    title_html,
+    '<button class="qc-carousel-button previous" ',
+    'type="button" aria-label="Previous image" ',
+    'onclick="qcCarouselMove(\'',
+    escape_html(carousel_id),
+    '\', -1)">',
+    "&#10094;",
+    "</button>",
+    '<div class="qc-carousel-window">',
+    '<div class="qc-carousel-track">',
+    paste(slides, collapse = ""),
+    "</div>",
+    "</div>",
+    '<button class="qc-carousel-button next" ',
+    'type="button" aria-label="Next image" ',
+    'onclick="qcCarouselMove(\'',
+    escape_html(carousel_id),
+    '\', 1)">',
+    "&#10095;",
+    "</button>",
+    '<div class="qc-carousel-counter">',
+    "1 / ",
+    length(slides),
+    "</div>",
+    "</div>"
+  )
+
+  htmltools::HTML(html)
+}
+
+message("Setup: completed")
+flush.console()
+```
+1!
+# Executive summary
+
+```{r}
+#| label: executive-summary
+
+if (is.null(pipeline_summary)) {
+  cat(
+    "⚠️ `pipeline_summary.rds` was not found. ",
+    "The report may be rendering before the pipeline has completed."
+  )
+} else if (identical(pipeline_summary$status, "completed")) {
+  cat("✅ The analysis pipeline completed successfully.")
+} else {
+  cat("❌ The analysis pipeline did not complete successfully.")
+}
+```
+
+```{r}
+#| label: run-overview
+
+run_overview <- tibble::tibble(
+  Metric = c(
+    "Pipeline status",
+    "Start time",
+    "End time",
+    "Duration (minutes)",
+    "Project root"
+  ),
+  Value = if (is.null(pipeline_summary)) {
+    c(
+      "Unavailable",
+      "Unavailable",
+      "Unavailable",
+      "Unavailable",
+      normalizePath(".", winslash = "/", mustWork = TRUE)
+    )
+  } else {
+    c(
+      status_badge(pipeline_summary$status),
+      as.character(pipeline_summary$start_time),
+      as.character(pipeline_summary$end_time),
+      format(round(pipeline_summary$duration_minutes, 2)),
+      pipeline_summary$project_root
+    )
+  }
+)
+
+knitr::kable(run_overview)
+```
+
+# Pipeline status
+
+## Status summary
+
+```{r}
+#| label: status-summary
+
+status_summary <- tibble::tibble(
+  Stage = c(
+    "Patient AF extraction",
+    "Patient unmixing",
+    "Nonpatient unmixing",
+    "Gating",
+    "Patient compensAID",
+    "Control compensAID"
+  ),
+  Status = c(
+    if (is.null(af_status)) {
+      "Unavailable"
+    } else if (count_status(af_status, "flagged") > 0) {
+      "⚠️ Review"
+    } else {
+      "✅ No flags"
+    },
+    if (is.null(patient_unmixing_status)) {
+      "Unavailable"
+    } else if (
+      count_status(patient_unmixing_status, "flagged") > 0 ||
+        count_status(patient_unmixing_status, "failed") > 0
+    ) {
+      "⚠️ Review"
+    } else {
+      "✅ No flags"
+    },
+    if (is.null(nonpatient_unmixing_status)) {
+      "Unavailable"
+    } else if (count_status(nonpatient_unmixing_status, "failed") > 0) {
+      "⚠️ Review"
+    } else {
+      "✅ No failures"
+    },
+    if (is.null(gating_plots)) {
+      "Unavailable"
+    } else {
+      "✅ Results available"
+    },
+    if (is.null(patient_compensaid_results)) {
+      "Unavailable"
+    } else if (any(patient_compensaid_summary$flagged_pairs > 0)) {
+      "⚠️ Review"
+    } else {
+      "✅ No flagged pairs"
+    },
+    if (is.null(controls_compensaid_results)) {
+      "Unavailable"
+    } else if (any(controls_compensaid_summary$flagged_pairs > 0)) {
+      "⚠️ Review"
+    } else {
+      "✅ No flagged pairs"
+    }
+  )
+)
+
+knitr::kable(status_summary)
+```
+
+## Pipeline error
+
+```{r}
+#| label: pipeline-error
+
+if (
+  !is.null(pipeline_summary) &&
+    !is.null(pipeline_summary$error)
+) {
+  knitr::kable(
+    tibble::tibble(
+      Error_class = paste(
+        pipeline_summary$error$class,
+        collapse = ", "
+      ),
+      Error_message = pipeline_summary$error$message
+    )
+  )
+} else {
+  cat("No pipeline error was recorded.")
+}
+```
+
+# Input and output inventory
+
+```{r}
+#| label: input-inventory
+
+if (is.null(pipeline_summary)) {
+  cat("Input inventory is unavailable.")
+} else {
+  input_inventory <- tibble::tibble(
+    Input_type = c(
+      "Patient samples",
+      "Patient unstained samples",
+      "Nonpatient samples"
+    ),
+    Count = c(
+      length(pipeline_summary$input$Patient_samples),
+      length(pipeline_summary$input$Patient_unstained_samples),
+      length(pipeline_summary$input$nonpatient_samples)
+    )
+  )
+
+  knitr::kable(input_inventory)
+}
+```
+
+```{r}
+#| label: output-inventory
+
+if (is.null(pipeline_summary)) {
+  cat("Output inventory is unavailable.")
+} else {
+  output_inventory <- tibble::tibble(
+    Output_type = c(
+      "Output folder",
+      "Unmixed folder",
+      "Pipeline log",
+      "Pipeline summary"
+    ),
+    Path = c(
+      pipeline_summary$output$output_folder,
+      pipeline_summary$output$unmixed_folder,
+      pipeline_summary$log_file,
+      pipeline_summary_file
+    ),
+    Exists = file.exists(
+      c(
+        pipeline_summary$output$output_folder,
+        pipeline_summary$output$unmixed_folder,
+        pipeline_summary$log_file,
+        pipeline_summary_file
+      )
+    )
+  )
+
+  knitr::kable(output_inventory)
+}
+```
+
+# Autofluorescence QC
+
+```{r}
+#| label: af-summary
+
+if (is.null(af_status)) {
+  cat(
+    "⚠️ Patient AF status file was not found: ",
+    patient_af_status_file
+  )
+} else {
+  af_summary <- tibble::tibble(
+    Status = c("Available", "Flagged"),
+    Count = c(
+      sum(af_status$af_status == "available", na.rm = TRUE),
+      sum(af_status$af_status == "flagged", na.rm = TRUE)
+    )
+  )
+
+  knitr::kable(af_summary)
+}
+```
+
+```{r}
+#| label: af-table
+
+if (is.null(af_status)) {
+  cat("No AF status table is available.")
+} else {
+  knitr::kable(af_status)
+}
+```
+
+## AF issues requiring review
+
+```{r}
+#| label: af-flags
+
+if (is.null(af_status)) {
+  cat("No AF flags are available.")
+} else {
+  af_flags <- af_status |>
+    dplyr::filter(af_status == "flagged")
+
+  if (nrow(af_flags) == 0) {
+    cat("✅ No AF extraction issues were flagged.")
+  } else {
+    knitr::kable(af_flags)
+  }
+}
+```
+
+# Unmixing QC
+
+## Patient samples
+
+```{r}
+#| label: patient-unmix-summary
+
+if (is.null(patient_unmixing_status)) {
+  cat("Patient unmixing status is unavailable.")
+} else {
+  patient_unmix_summary <- patient_unmixing_status |>
+    dplyr::count(status, name = "Count")
+
+  knitr::kable(patient_unmix_summary)
+}
+```
+
+```{r}
+#| label: patient-unmix-table
+
+if (is.null(patient_unmixing_status)) {
+  cat("No patient unmixing table is available.")
+} else {
+  knitr::kable(patient_unmixing_status)
+}
+```
+
+## Nonpatient samples
+
+```{r}
+#| label: nonpatient-unmix-summary
+
+if (is.null(nonpatient_unmixing_status)) {
+  cat("Nonpatient unmixing status is unavailable.")
+} else if (nrow(nonpatient_unmixing_status) == 0) {
+  cat("No nonpatient samples required processing in this run.")
+} else {
+  nonpatient_unmix_summary <- nonpatient_unmixing_status |>
+    dplyr::count(status, name = "Count")
+
+  knitr::kable(nonpatient_unmix_summary)
+}
+```
+
+```{r}
+#| label: nonpatient-unmix-table
+
+if (is.null(nonpatient_unmixing_status)) {
+  cat("No nonpatient unmixing table is available.")
+} else if (nrow(nonpatient_unmixing_status) == 0) {
+  cat("No nonpatient samples required processing in this run.")
+} else {
+  knitr::kable(nonpatient_unmixing_status)
+}
+```
+
+## AutoSpectral visual review
+
+Review outputs from AutoSpectral to confirm run.
+
+### Fluorophore variants
+
+```{r}
+#| label: autospectral-variants-carousel
+#| results: asis
+
+make_image_carousel(
+  image_files = variant_images,
+  carousel_id = "autospectral-variants",
+  title = "Fluorophore variant diagnostics",
+  image_height = "28rem"
+)
+```
+
+### Autofluorescence extraction
+
+```{r}
+#| label: autospectral-af-carousel
+#| results: asis
+
+make_image_carousel(
+  image_files = autofluorescence_images,
+  carousel_id = "autospectral-af",
+  title = "Patient autofluorescence diagnostics",
+  image_height = "28rem"
+)
+```
+
+### Universal-negative scatter plots
+
+```{r}
+#| label: autospectral-scatter-carousel
+#| results: asis
+
+make_image_carousel(
+  image_files = scatter_images,
+  carousel_id = "autospectral-scatter",
+  title = "Universal-negative scatter diagnostics",
+  image_height = "28rem"
+)
+```
+
+### Similarity and hotspot matrices
+
+```{r}
+#| label: autospectral-similarity-carousel
+#| results: asis
+
+make_image_carousel(
+  image_files = similarity_images,
+  carousel_id = "autospectral-similarity",
+  title = "Similarity and hotspot diagnostics",
+  image_height = "28rem"
+)
+```
+
+### Spectral diagnostics
+
+```{r}
+#| label: autospectral-spectra-carousel
+#| results: asis
+
+make_image_carousel(
+  image_files = spectra_images,
+  carousel_id = "autospectral-spectra",
+  title = "Spectral extraction diagnostics",
+  image_height = "28rem"
+)
+```
+
+### Clean-control diagnostics
+
+```{r}
+#| label: autospectral-clean-controls-carousel
+#| results: asis
+
+make_image_carousel(
+  image_files = clean_control_images,
+  carousel_id = "autospectral-clean-controls",
+  title = "Clean-control diagnostics",
+  image_height = "28rem"
+)
+```
+
+# Gating QC
+
+```{r}
+#| label: gating-availability
+
+if (is.null(gating_plots)) {
+  cat(
+    "⚠️ Gating plots were not found. Expected file: ",
+    qc_gating_plots_file
+  )
+} else {
+  cat(
+    "✅ Gating results are available. ",
+    length(gating_plots),
+    " plot object group(s) were loaded."
+  )
+}
+```
+
+## Patient gating plots
+
+```{r}
+#| label: patient-gating-plots
+#| results: asis
+
+if (!is.null(gating_plots)) {
+  if (!is.null(gating_plots$PT_ungated_NxN)) {
+    cat("### Ungated patient NxN plots\n\n")
+    print(gating_plots$PT_ungated_NxN)
+  }
+
+  if (!is.null(gating_plots$PT_cleanup_gating)) {
+    cat("\n### Patient cleanup gating plots\n\n")
+    print(gating_plots$PT_cleanup_gating)
+  }
+
+  if (!is.null(gating_plots$PT_cleaned_NxN)) {
+    cat("\n### Gated patient NxN plots\n\n")
+    print(gating_plots$PT_cleaned_NxN)
+  }
+} else {
+  cat("Patient gating plots are unavailable.")
+}
+```
+
+## Control gating plots
+
+```{r}
+#| label: control-gating-plots
+#| results: asis
+
+if (!is.null(gating_plots)) {
+  if (!is.null(gating_plots$controls_ungated_NxN)) {
+    cat("### Ungated control NxN plots\n\n")
+    print(gating_plots$controls_ungated_NxN)
+  }
+
+  if (!is.null(gating_plots$controls_cleanup_gating)) {
+    cat("\n### Control cleanup gating plots\n\n")
+    print(gating_plots$controls_cleanup_gating)
+  }
+
+  if (!is.null(gating_plots$controls_cleaned_NxN)) {
+    cat("\n### Gated control NxN plots\n\n")
+    print(gating_plots$controls_cleaned_NxN)
+  }
+} else {
+  cat("Control gating plots are unavailable.")
+}
+```
+
+# compensAID QC
+
+## Patient summary
+
+```{r}
+#| label: patient-compensaid-summary
+
+if (is.null(patient_compensaid_results)) {
+  cat("Patient compensAID results are unavailable.")
+} else {
+  knitr::kable(patient_compensaid_summary)
+}
+```
+
+## Patient flagged pairs
+
+```{r}
+#| label: patient-compensaid-flags
+
+if (
+  is.null(patient_compensaid_results) ||
+    !any(patient_compensaid_summary$flagged_pairs > 0)
+) {
+  cat("✅ No patient samples contain flagged SSI pairs.")
+} else {
+  patient_flagged_pairs <- purrr::imap_dfr(
+    patient_compensaid_results,
+    function(result, sample_name) {
+      if (
+        is.null(result$flagged_pairs) ||
+          nrow(result$flagged_pairs) == 0
+      ) {
+        return(tibble::tibble())
+      }
+
+      result$flagged_pairs |>
+        dplyr::mutate(sample = sample_name, .before = 1)
+    }
+  )
+
+  knitr::kable(patient_flagged_pairs)
+}
+```
+
+## Patient compensAID diagnostic plots
+
+```{r}
+#| label: patient-compensaid-plots
+#| results: asis
+
+if (is.null(patient_compensaid_results)) {
+  cat("Patient compensAID results are unavailable.")
+} else {
+  flagged_samples <- patient_compensaid_results[
+    purrr::map_lgl(
+      patient_compensaid_results,
+      function(result) {
+        !is.null(result$compensaid_plots) &&
+          length(result$compensaid_plots) > 0
+      }
+    )
+  ]
+
+  if (length(flagged_samples) == 0) {
+    cat("No patient diagnostic plots were generated.")
+  } else {
+    purrr::iwalk(
+      flagged_samples,
+      function(result, sample_name) {
+        cat("\n### ", sample_name, "\n\n", sep = "")
+
+        purrr::iwalk(
+          result$compensaid_plots,
+          function(plot_object, plot_index) {
+            cat(
+              "\nDiagnostic plot ",
+              plot_index,
+              "\n\n",
+              sep = ""
+            )
+
+            print(plot_object)
+          }
+        )
+      }
+    )
+  }
+}
+```
+
+## Control summary
+
+```{r}
+#| label: controls-compensaid-summary
+
+if (is.null(controls_compensaid_results)) {
+  cat("Control compensAID results are unavailable.")
+} else if (length(controls_compensaid_results) == 0) {
+  cat("No control compensAID results were generated.")
+} else {
+  knitr::kable(controls_compensaid_summary)
+}
+```
+
+# Review checklist
+
+Use this checklist during review:
+
+- [ ] Pipeline completed without a fatal error.
+- [ ] All expected patient samples are present in the input inventory.
+- [ ] Patient unstained samples are available for the intended patient samples.
+- [ ] AF extraction flags have been reviewed.
+- [ ] Patient unmixing flags and failures have been reviewed.
+- [ ] Nonpatient unmixing failures have been reviewed.
+- [ ] Patient cleanup gates appear appropriate.
+- [ ] Control cleanup gates appear appropriate.
+- [ ] Event populations are plausible after cleanup gating.
+- [ ] compensAID flagged pairs have been reviewed.

@@ -25,8 +25,10 @@ existing_spectra_files <- list.files(
   pattern = "^Automated_autospectral_spectra_[0-9]{8}_[0-9]{6}\\.csv$",
   full.names = TRUE
 )
+variants_folder <- file.path(output_folder, "variants")
+
 existing_variant_RDS <- list.files(
-  path = output_folder,
+  path = variants_folder,
   pattern = "Spectral_variants\\.rds$",
   full.names = TRUE,
   ignore.case = TRUE
@@ -133,10 +135,18 @@ if (base::length(existing_variant_RDS) > 0) {
   message("Using fluorophore variant file ", basename(latest_variant_file))
 } else {
   fluorophore_variants <- withr::with_dir(
-    output_folder,
+    variants_folder,
     get.spectral.variants(
-      control.dir = fs::path_abs(control.dir, start = ".."),
-      control.def.file = fs::path_abs(control_filename, start = ".."),
+      control.dir = normalizePath(
+        control.dir,
+        winslash = "/",
+        mustWork = TRUE
+      ),
+      control.def.file = normalizePath(
+        control_filename,
+        winslash = "/",
+        mustWork = TRUE
+      ),
       asp = asp,
       spectra = spectra,
       output.dir = ".",

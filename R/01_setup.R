@@ -96,7 +96,8 @@ required_output_directories <- c(
   unmixed_folder,
   file.path(output_folder, "table_spectra"),
   file.path(output_folder, "compensAID"),
-  file.path(output_folder, "logs")
+  file.path(output_folder, "logs"),
+  file.path(output_folder, "variants")
 )
 
 purrr::walk(
