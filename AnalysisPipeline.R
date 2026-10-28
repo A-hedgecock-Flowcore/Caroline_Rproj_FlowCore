@@ -105,6 +105,9 @@ tryCatch(
     message("Running compensAID package for unmixing evaluation")
     source(file.path(project_root, "R", "04_compensAID.R"))
 
+    message("Exporting QC images and files")
+    source(file.path(project_root, "R", "05_export_qc.R"))
+
     message("Pipeline stages completed")
   },
   error = function(e) {

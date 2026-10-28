@@ -20,6 +20,8 @@ execute:
   warning: false
   message: false
   error: true
+params: 
+  output_folder: "Output"
 ---
 
 <style>
@@ -138,7 +140,11 @@ function qcCarouselMove(carouselId, direction) {
 ```{r}
 #| label: setup
 
-message("Setup: checking report packages")
+# ------------------------------------------------------------------------------
+# 1. Required packages
+# ------------------------------------------------------------------------------
+
+message("QC report setup: checking required packages")
 flush.console()
 
 required_report_packages <- c(
@@ -167,16 +173,41 @@ if (length(missing_report_packages) > 0) {
     paste(missing_report_packages, collapse = ", ")
   )
 }
-message("Setup: checking output folder")
+
+
+# ------------------------------------------------------------------------------
+# 2. Project and output paths
+# ------------------------------------------------------------------------------
+
+message("QC report setup: checking output folder")
 flush.console()
 
-output_folder <- file.path("Output")
+project_root <- normalizePath(
+  getwd(),
+  winslash = "/",
+  mustWork = TRUE
+)
+
+output_folder <- params$output_folder
+
+if (!fs::is_absolute_path(output_folder)) {
+  output_folder <- fs::path(
+    project_root,
+    output_folder
+  )
+}
+
+output_folder <- normalizePath(
+  output_folder,
+  winslash = "/",
+  mustWork = FALSE
+)
 
 if (!dir.exists(output_folder)) {
   stop(
     "Output folder does not exist: ",
     output_folder,
-    "\nRun AnalysisPipeline.R before rendering the QC report"
+    "\nRun AnalysisPipeline.R before rendering the QC report."
   )
 }
 
@@ -210,72 +241,25 @@ clean_controls_folder <- file.path(
   "figure_clean_controls"
 )
 
-variant_images <- sort(list.files(
-  variants_folder,
-  pattern = "_variants\\.jpg$",
-  full.names = TRUE,
-  ignore.case = TRUE
-))
+compensaid_folder <- file.path(
+  output_folder,
+  "compensAID"
+)
 
-autofluorescence_images <- sort(list.files(
-  autofluorescence_folder,
-  pattern = "\\.(jpg|jpeg|png)$",
-  full.names = TRUE,
-  ignore.case = TRUE
-))
 
-scatter_images <- sort(list.files(
-  scatter_folder,
-  pattern = "\\.(jpg|jpeg|png)$",
-  full.names = TRUE,
-  ignore.case = TRUE
-))
-
-similarity_images <- sort(list.files(
-  similarity_folder,
-  pattern = "\\.(jpg|jpeg|png)$",
-  full.names = TRUE,
-  ignore.case = TRUE
-))
-
-spectra_images <- sort(list.files(
-  spectra_folder,
-  pattern = "\\.(jpg|jpeg|png)$",
-  full.names = TRUE,
-  ignore.case = TRUE
-))
-
-clean_control_images <- sort(list.files(
-  clean_controls_folder,
-  pattern = "\\.(jpg|jpeg|png)$",
-  full.names = TRUE,
-  ignore.case = TRUE
-))
-
-message("Setup: reading pipeline summary")
-flush.console()
+# ------------------------------------------------------------------------------
+# 3. Output files
+# ------------------------------------------------------------------------------
 
 pipeline_summary_file <- file.path(
   output_folder,
   "pipeline_summary.rds"
 )
 
-pipeline_summary <- if (file.exists(pipeline_summary_file)) {
-  readRDS(pipeline_summary_file)
-} else {
-  NULL
-}
-
-message("Setup: reading AF status")
-flush.console()
-
 patient_af_status_file <- file.path(
   output_folder,
   "patient_af_status.csv"
 )
-
-message("Setup: reading unmixing status files")
-flush.console()
 
 patient_unmixing_status_file <- file.path(
   output_folder,
@@ -287,28 +271,87 @@ nonpatient_unmixing_status_file <- file.path(
   "nonpatient_unmixing_status.csv"
 )
 
-message("Setup: reading gating plots")
-flush.console()
-
 qc_gating_plots_file <- file.path(
   output_folder,
   "qc_gating_plots.rds"
 )
 
-message("Setup: reading compensAID results")
-flush.console()
-
 patient_compensaid_file <- file.path(
-  output_folder,
-  "compensAID",
+  compensaid_folder,
   "PT_compensaid_results.rds"
 )
 
 controls_compensaid_file <- file.path(
-  output_folder,
-  "compensAID",
+  compensaid_folder,
   "controls_compensaid_results.rds"
 )
+
+
+# ------------------------------------------------------------------------------
+# 4. Image discovery
+# ------------------------------------------------------------------------------
+
+message("QC report setup: locating diagnostic images")
+flush.console()
+
+variant_images <- sort(
+  list.files(
+    path = variants_folder,
+    pattern = "_variants\\.jpg$",
+    full.names = TRUE,
+    ignore.case = TRUE
+  )
+)
+
+autofluorescence_images <- sort(
+  list.files(
+    path = autofluorescence_folder,
+    pattern = "\\.(jpg|jpeg|png)$",
+    full.names = TRUE,
+    ignore.case = TRUE
+  )
+)
+
+scatter_images <- sort(
+  list.files(
+    path = scatter_folder,
+    pattern = "\\.(jpg|jpeg|png)$",
+    full.names = TRUE,
+    ignore.case = TRUE
+  )
+)
+
+similarity_images <- sort(
+  list.files(
+    path = similarity_folder,
+    pattern = "\\.(jpg|jpeg|png)$",
+    full.names = TRUE,
+    ignore.case = TRUE
+  )
+)
+
+spectra_images <- sort(
+  list.files(
+    path = spectra_folder,
+    pattern = "\\.(jpg|jpeg|png)$",
+    full.names = TRUE,
+    ignore.case = TRUE
+  )
+)
+
+clean_control_images <- sort(
+  list.files(
+    path = clean_controls_folder,
+    pattern = "\\.(jpg|jpeg|png)$",
+    full.names = TRUE,
+    ignore.case = TRUE
+  )
+)
+
+
+# ------------------------------------------------------------------------------
+# 5. General file-loading helpers
+# ------------------------------------------------------------------------------
 
 read_status_table <- function(path) {
   if (!file.exists(path)) {
@@ -316,36 +359,67 @@ read_status_table <- function(path) {
   }
 
   readr::read_csv(
-    path,
+    file = path,
     show_col_types = FALSE
   )
 }
 
-af_status <- read_status_table(patient_af_status_file)
+read_rds_if_exists <- function(path) {
+  if (!file.exists(path)) {
+    return(NULL)
+  }
+
+  readRDS(path)
+}
+
+
+# ------------------------------------------------------------------------------
+# 6. Load pipeline results
+# ------------------------------------------------------------------------------
+
+message("QC report setup: loading pipeline summary and status tables")
+flush.console()
+
+pipeline_summary <- read_rds_if_exists(
+  pipeline_summary_file
+)
+
+af_status <- read_status_table(
+  patient_af_status_file
+)
+
 patient_unmixing_status <- read_status_table(
   patient_unmixing_status_file
 )
+
 nonpatient_unmixing_status <- read_status_table(
   nonpatient_unmixing_status_file
 )
 
-gating_plots <- if (file.exists(qc_gating_plots_file)) {
-  readRDS(qc_gating_plots_file)
-} else {
-  NULL
-}
 
-patient_compensaid_results <- if (file.exists(patient_compensaid_file)) {
-  readRDS(patient_compensaid_file)
-} else {
-  NULL
-}
+# ------------------------------------------------------------------------------
+# 7. Load gating and compensAID results
+# ------------------------------------------------------------------------------
 
-controls_compensaid_results <- if (file.exists(controls_compensaid_file)) {
-  readRDS(controls_compensaid_file)
-} else {
-  NULL
-}
+message("QC report setup: loading gating and compensAID results")
+flush.console()
+
+gating_plots <- read_rds_if_exists(
+  qc_gating_plots_file
+)
+
+patient_compensaid_results <- read_rds_if_exists(
+  patient_compensaid_file
+)
+
+controls_compensaid_results <- read_rds_if_exists(
+  controls_compensaid_file
+)
+
+
+# ------------------------------------------------------------------------------
+# 8. Status-summary helpers
+# ------------------------------------------------------------------------------
 
 status_badge <- function(status) {
   if (identical(status, "completed")) {
@@ -368,16 +442,21 @@ count_status <- function(data, status) {
     return(0L)
   }
 
-  sum(data$status == status, na.rm = TRUE)
+  sum(
+    data$status == status,
+    na.rm = TRUE
+  )
 }
 
 compensaid_summary <- function(results) {
   if (is.null(results) || length(results) == 0) {
-    return(tibble::tibble(
-      sample = character(),
-      flagged_pairs = integer(),
-      review_status = character()
-    ))
+    return(
+      tibble::tibble(
+        sample = character(),
+        flagged_pairs = integer(),
+        review_status = character()
+      )
+    )
   }
 
   purrr::imap_dfr(
@@ -412,13 +491,20 @@ controls_compensaid_summary <- compensaid_summary(
   controls_compensaid_results
 )
 
+
+# ------------------------------------------------------------------------------
+# 9. HTML carousel helper
+# ------------------------------------------------------------------------------
+
 make_image_carousel <- function(
   image_files,
   carousel_id,
   title = NULL,
   image_height = "32rem"
 ) {
-  image_files <- image_files[file.exists(image_files)]
+  image_files <- image_files[
+    file.exists(image_files)
+  ]
 
   if (length(image_files) == 0) {
     return(
@@ -434,10 +520,9 @@ make_image_carousel <- function(
     mustWork = TRUE
   )
 
-  # Convert absolute paths to paths relative to the report directory.
   image_sources <- fs::path_rel(
     image_files,
-    start = getwd()
+    start = project_root
   )
 
   image_sources <- gsub(
@@ -478,14 +563,20 @@ make_image_carousel <- function(
   title_html <- if (is.null(title)) {
     ""
   } else {
-    paste0("<h4>", escape_html(title), "</h4>")
+    paste0(
+      "<h4>",
+      escape_html(title),
+      "</h4>"
+    )
   }
 
   html <- paste0(
     '<div class="qc-carousel" id="',
     escape_html(carousel_id),
     '">',
+
     title_html,
+
     '<button class="qc-carousel-button previous" ',
     'type="button" aria-label="Previous image" ',
     'onclick="qcCarouselMove(\'',
@@ -493,11 +584,13 @@ make_image_carousel <- function(
     '\', -1)">',
     "&#10094;",
     "</button>",
+
     '<div class="qc-carousel-window">',
     '<div class="qc-carousel-track">',
     paste(slides, collapse = ""),
     "</div>",
     "</div>",
+
     '<button class="qc-carousel-button next" ',
     'type="button" aria-label="Next image" ',
     'onclick="qcCarouselMove(\'',
@@ -505,20 +598,22 @@ make_image_carousel <- function(
     '\', 1)">',
     "&#10095;",
     "</button>",
+
     '<div class="qc-carousel-counter">',
     "1 / ",
     length(slides),
     "</div>",
+
     "</div>"
   )
 
   htmltools::HTML(html)
 }
 
-message("Setup: completed")
+message("QC report setup: completed")
 flush.console()
 ```
-1!
+
 # Executive summary
 
 ```{r}
@@ -833,12 +928,13 @@ Review outputs from AutoSpectral to confirm run.
 ```{r}
 #| label: autospectral-variants-carousel
 #| results: asis
-
-make_image_carousel(
-  image_files = variant_images,
-  carousel_id = "autospectral-variants",
-  title = "Fluorophore variant diagnostics",
-  image_height = "28rem"
+cat(
+  make_image_carousel(
+    image_files = variant_images,
+    carousel_id = "autospectral-variants",
+    title = "Fluorophore variant diagnostics",
+    image_height = "28rem"
+  )
 )
 ```
 
@@ -847,12 +943,13 @@ make_image_carousel(
 ```{r}
 #| label: autospectral-af-carousel
 #| results: asis
-
-make_image_carousel(
-  image_files = autofluorescence_images,
-  carousel_id = "autospectral-af",
-  title = "Patient autofluorescence diagnostics",
-  image_height = "28rem"
+cat(
+  make_image_carousel(
+    image_files = autofluorescence_images,
+    carousel_id = "autospectral-af",
+    title = "Patient autofluorescence diagnostics",
+    image_height = "28rem"
+  )
 )
 ```
 
@@ -862,11 +959,13 @@ make_image_carousel(
 #| label: autospectral-scatter-carousel
 #| results: asis
 
-make_image_carousel(
-  image_files = scatter_images,
-  carousel_id = "autospectral-scatter",
-  title = "Universal-negative scatter diagnostics",
-  image_height = "28rem"
+cat(
+  make_image_carousel(
+    image_files = scatter_images,
+    carousel_id = "autospectral-scatter",
+    title = "Universal-negative scatter diagnostics",
+    image_height = "28rem"
+  )
 )
 ```
 
@@ -876,11 +975,13 @@ make_image_carousel(
 #| label: autospectral-similarity-carousel
 #| results: asis
 
-make_image_carousel(
-  image_files = similarity_images,
-  carousel_id = "autospectral-similarity",
-  title = "Similarity and hotspot diagnostics",
-  image_height = "28rem"
+cat(
+  make_image_carousel(
+    image_files = similarity_images,
+    carousel_id = "autospectral-similarity",
+    title = "Similarity and hotspot diagnostics",
+    image_height = "28rem"
+  )
 )
 ```
 
@@ -890,11 +991,13 @@ make_image_carousel(
 #| label: autospectral-spectra-carousel
 #| results: asis
 
-make_image_carousel(
-  image_files = spectra_images,
-  carousel_id = "autospectral-spectra",
-  title = "Spectral extraction diagnostics",
-  image_height = "28rem"
+cat(
+  make_image_carousel(
+    image_files = spectra_images,
+    carousel_id = "autospectral-spectra",
+    title = "Spectral extraction diagnostics",
+    image_height = "28rem"
+  )
 )
 ```
 
@@ -904,11 +1007,13 @@ make_image_carousel(
 #| label: autospectral-clean-controls-carousel
 #| results: asis
 
-make_image_carousel(
-  image_files = clean_control_images,
-  carousel_id = "autospectral-clean-controls",
-  title = "Clean-control diagnostics",
-  image_height = "28rem"
+cat(
+  make_image_carousel(
+    image_files = clean_control_images,
+    carousel_id = "autospectral-clean-controls",
+    title = "Clean-control diagnostics",
+    image_height = "28rem"
+  )
 )
 ```
 
