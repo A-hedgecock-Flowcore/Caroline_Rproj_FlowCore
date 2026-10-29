@@ -1363,48 +1363,6 @@ if (is.null(patient_compensaid_summary)) {
 }
 ```
 
-## Patient compensAID diagnostic plots
-
-```{r}
-#| label: patient-compensaid-plots
-#| results: asis
-
-patient_compensaid_matrix_images <- patient_compensaid_images[
-  grepl(
-    "_SSI_matrix",
-    basename(patient_compensaid_images),
-    ignore.case = TRUE
-  )
-]
-
-if (length(patient_compensaid_images) == 0) {
-  cat("Patient compensAID diagnostic images are unavailable.")
-} else if (length(patient_compensaid_matrix_images) == 0) {
-  cat(
-    "No patient compensAID SSI matrix images were found. ",
-    "Available diagnostic images are shown below."
-  )
-
-  cat(
-    make_image_carousel(
-      image_files = patient_compensaid_images,
-      carousel_id = "patient-compensaid-diagnostics",
-      title = "Patient compensAID diagnostic plots",
-      image_height = "32rem"
-    )
-  )
-} else {
-  cat(
-    make_image_carousel(
-      image_files = patient_compensaid_matrix_images,
-      carousel_id = "patient-compensaid-ssi-matrices",
-      title = "Patient compensAID SSI matrices",
-      image_height = "32rem"
-    )
-  )
-}
-```
-
 ## Control summary
 
 ```{r}
@@ -1492,18 +1450,3 @@ if (is.null(controls_compensaid_summary)) {
 }
 ```
 
-
-# Review checklist
-
-Use this checklist during review:
-
-- [ ] Pipeline completed without a fatal error.
-- [ ] All expected patient samples are present in the input inventory.
-- [ ] Patient unstained samples are available for the intended patient samples.
-- [ ] AF extraction flags have been reviewed.
-- [ ] Patient unmixing flags and failures have been reviewed.
-- [ ] Nonpatient unmixing failures have been reviewed.
-- [ ] Patient cleanup gates appear appropriate.
-- [ ] Control cleanup gates appear appropriate.
-- [ ] Event populations are plausible after cleanup gating.
-- [ ] compensAID flagged pairs have been reviewed.
