@@ -140,9 +140,7 @@ function qcCarouselMove(carouselId, direction) {
 ```{r}
 #| label: setup
 
-# ------------------------------------------------------------------------------
-# 1. Required packages
-# ------------------------------------------------------------------------------
+# Required packages
 
 message("QC report setup: checking required packages")
 flush.console()
@@ -152,7 +150,6 @@ required_report_packages <- c(
   "readr",
   "tibble",
   "purrr",
-  "stringr",
   "knitr",
   "fs",
   "htmltools"
@@ -167,6 +164,14 @@ missing_report_packages <- required_report_packages[
   )
 ]
 
+library(dplyr)
+library(readr)
+library(tibble)
+library(purrr)
+library(knitr)
+library(fs)
+library(htmltools)
+
 if (length(missing_report_packages) > 0) {
   stop(
     "Missing packages required to render the QC report: ",
@@ -175,9 +180,7 @@ if (length(missing_report_packages) > 0) {
 }
 
 
-# ------------------------------------------------------------------------------
-# 2. Project and output paths
-# ------------------------------------------------------------------------------
+# Project and output paths
 
 message("QC report setup: checking output folder")
 flush.console()
@@ -188,10 +191,11 @@ project_root <- normalizePath(
   mustWork = TRUE
 )
 
-output_folder <- params$output_folder
+# output_folder <- params$output_folder # Quarto rendering
+output_folder <- file.path("Output") # TESTING
 
 if (!fs::is_absolute_path(output_folder)) {
-  output_folder <- fs::path(
+  output_folder <- file.path(
     project_root,
     output_folder
   )
@@ -206,10 +210,12 @@ output_folder <- normalizePath(
 if (!dir.exists(output_folder)) {
   stop(
     "Output folder does not exist: ",
-    output_folder,
-    "\nRun AnalysisPipeline.R before rendering the QC report."
+    output_folder
   )
 }
+
+
+# Generated image folders
 
 variants_folder <- file.path(
   output_folder,
@@ -241,119 +247,143 @@ clean_controls_folder <- file.path(
   "figure_clean_controls"
 )
 
-compensaid_folder <- file.path(
+qc_images_folder <- file.path(
   output_folder,
-  "compensAID"
+  "qc_images"
+)
+
+patient_gating_folder <- file.path(
+  qc_images_folder,
+  "gating",
+  "patient"
+)
+
+controls_gating_folder <- file.path(
+  qc_images_folder,
+  "gating",
+  "controls"
+)
+
+patient_compensaid_folder <- file.path(
+  qc_images_folder,
+  "compensAID",
+  "patient"
+)
+
+controls_compensaid_folder <- file.path(
+  qc_images_folder,
+  "compensAID",
+  "controls"
 )
 
 
-# ------------------------------------------------------------------------------
-# 3. Output files
-# ------------------------------------------------------------------------------
+# Generated CSV files
 
-pipeline_summary_file <- file.path(
+qc_tables_folder <- file.path(
   output_folder,
-  "pipeline_summary.rds"
+  "qc_tables"
 )
 
 patient_af_status_file <- file.path(
-  output_folder,
+  qc_tables_folder,
   "patient_af_status.csv"
 )
 
 patient_unmixing_status_file <- file.path(
-  output_folder,
+  qc_tables_folder,
   "patient_unmixing_status.csv"
 )
 
 nonpatient_unmixing_status_file <- file.path(
-  output_folder,
+  qc_tables_folder,
   "nonpatient_unmixing_status.csv"
 )
 
-qc_gating_plots_file <- file.path(
+patient_compensaid_summary_file <- file.path(
+  qc_tables_folder,
+  "patient_compensaid_summary.csv"
+)
+
+controls_compensaid_summary_file <- file.path(
+  qc_tables_folder,
+  "controls_compensaid_summary.csv"
+)
+
+qc_export_status_file <- file.path(
+  qc_tables_folder,
+  "qc_export_status.csv"
+)
+
+pipeline_summary_file <- file.path(
   output_folder,
-  "qc_gating_plots.rds"
-)
-
-patient_compensaid_file <- file.path(
-  compensaid_folder,
-  "PT_compensaid_results.rds"
-)
-
-controls_compensaid_file <- file.path(
-  compensaid_folder,
-  "controls_compensaid_results.rds"
+  "pipeline_summary.csv"
 )
 
 
-# ------------------------------------------------------------------------------
-# 4. Image discovery
-# ------------------------------------------------------------------------------
+# Image discovery
 
-message("QC report setup: locating diagnostic images")
+message("QC report setup: locating generated diagnostic images")
 flush.console()
 
-variant_images <- sort(
-  list.files(
-    path = variants_folder,
-    pattern = "_variants\\.jpg$",
-    full.names = TRUE,
-    ignore.case = TRUE
+find_images <- function(path) {
+  if (!dir.exists(path)) {
+    return(character())
+  }
+
+  sort(
+    list.files(
+      path = path,
+      pattern = "\\.(jpg|jpeg|png)$",
+      full.names = TRUE,
+      ignore.case = TRUE
+    )
   )
+}
+
+variant_images <- find_images(
+  variants_folder
 )
 
-autofluorescence_images <- sort(
-  list.files(
-    path = autofluorescence_folder,
-    pattern = "\\.(jpg|jpeg|png)$",
-    full.names = TRUE,
-    ignore.case = TRUE
-  )
+autofluorescence_images <- find_images(
+  autofluorescence_folder
 )
 
-scatter_images <- sort(
-  list.files(
-    path = scatter_folder,
-    pattern = "\\.(jpg|jpeg|png)$",
-    full.names = TRUE,
-    ignore.case = TRUE
-  )
+scatter_images <- find_images(
+  scatter_folder
 )
 
-similarity_images <- sort(
-  list.files(
-    path = similarity_folder,
-    pattern = "\\.(jpg|jpeg|png)$",
-    full.names = TRUE,
-    ignore.case = TRUE
-  )
+similarity_images <- find_images(
+  similarity_folder
 )
 
-spectra_images <- sort(
-  list.files(
-    path = spectra_folder,
-    pattern = "\\.(jpg|jpeg|png)$",
-    full.names = TRUE,
-    ignore.case = TRUE
-  )
+spectra_images <- find_images(
+  spectra_folder
 )
 
-clean_control_images <- sort(
-  list.files(
-    path = clean_controls_folder,
-    pattern = "\\.(jpg|jpeg|png)$",
-    full.names = TRUE,
-    ignore.case = TRUE
-  )
+clean_control_images <- find_images(
+  clean_controls_folder
+)
+
+patient_gating_images <- find_images(
+  patient_gating_folder
+)
+
+controls_gating_images <- find_images(
+  controls_gating_folder
+)
+
+patient_compensaid_images <- find_images(
+  patient_compensaid_folder
+)
+
+controls_compensaid_images <- find_images(
+  controls_compensaid_folder
 )
 
 
-# ------------------------------------------------------------------------------
-# 5. General file-loading helpers
-# ------------------------------------------------------------------------------
+# CSV-loading helpers
 
-read_status_table <- function(path) {
+read_csv_if_exists <- function(path) {
   if (!file.exists(path)) {
     return(NULL)
   }
@@ -364,81 +394,61 @@ read_status_table <- function(path) {
   )
 }
 
-read_rds_if_exists <- function(path) {
-  if (!file.exists(path)) {
-    return(NULL)
-  }
+# Load generated status and summary tables
 
-  readRDS(path)
-}
-
-
-# ------------------------------------------------------------------------------
-# 6. Load pipeline results
-# ------------------------------------------------------------------------------
-
-message("QC report setup: loading pipeline summary and status tables")
+message("QC report setup: loading generated status and summary tables")
 flush.console()
 
-pipeline_summary <- read_rds_if_exists(
-  pipeline_summary_file
-)
-
-af_status <- read_status_table(
+af_status <- read_csv_if_exists(
   patient_af_status_file
 )
 
-patient_unmixing_status <- read_status_table(
+patient_unmixing_status <- read_csv_if_exists(
   patient_unmixing_status_file
 )
 
-nonpatient_unmixing_status <- read_status_table(
+nonpatient_unmixing_status <- read_csv_if_exists(
   nonpatient_unmixing_status_file
 )
 
-
-# ------------------------------------------------------------------------------
-# 7. Load gating and compensAID results
-# ------------------------------------------------------------------------------
-
-message("QC report setup: loading gating and compensAID results")
-flush.console()
-
-gating_plots <- read_rds_if_exists(
-  qc_gating_plots_file
+patient_compensaid_summary <- read_csv_if_exists(
+  patient_compensaid_summary_file
 )
 
-patient_compensaid_results <- read_rds_if_exists(
-  patient_compensaid_file
+controls_compensaid_summary <- read_csv_if_exists(
+  controls_compensaid_summary_file
 )
 
-controls_compensaid_results <- read_rds_if_exists(
-  controls_compensaid_file
+qc_export_status <- read_csv_if_exists(
+  qc_export_status_file
 )
 
+pipeline_summary <- read_csv_if_exists(
+  pipeline_summary_file
+)
 
-# ------------------------------------------------------------------------------
-# 8. Status-summary helpers
-# ------------------------------------------------------------------------------
-
-status_badge <- function(status) {
-  if (identical(status, "completed")) {
-    return("✅ Completed")
+## Helper for tibble reading
+summary_value <- function(data, column, default = "Unavailable") {
+  if (
+    is.null(data) ||
+      nrow(data) == 0 ||
+      !column %in% names(data) ||
+      is.na(data[[column]][[1]])
+  ) {
+    return(default)
   }
 
-  if (identical(status, "failed")) {
-    return("❌ Failed")
-  }
-
-  if (identical(status, "flagged")) {
-    return("⚠️ Flagged")
-  }
-
-  "Unknown"
+  as.character(data[[column]][[1]])
 }
 
+# Status-summary helpers
+
 count_status <- function(data, status) {
-  if (is.null(data) || nrow(data) == 0) {
+  if (
+    is.null(data) ||
+      nrow(data) == 0 ||
+      !"status" %in% names(data)
+  ) {
     return(0L)
   }
 
@@ -448,53 +458,27 @@ count_status <- function(data, status) {
   )
 }
 
-compensaid_summary <- function(results) {
-  if (is.null(results) || length(results) == 0) {
-    return(
-      tibble::tibble(
-        sample = character(),
-        flagged_pairs = integer(),
-        review_status = character()
-      )
-    )
+has_compensaid_flags <- function(data) {
+  if (
+    is.null(data) ||
+      nrow(data) == 0 ||
+      !"flagged_pairs" %in% names(data)
+  ) {
+    return(FALSE)
   }
 
-  purrr::imap_dfr(
-    results,
-    function(result, sample_name) {
-      flagged_pairs <- result$flagged_pairs
+  flagged_pairs <- suppressWarnings(
+    as.numeric(data$flagged_pairs)
+  )
 
-      n_flagged <- if (is.null(flagged_pairs)) {
-        0L
-      } else {
-        nrow(flagged_pairs)
-      }
-
-      tibble::tibble(
-        sample = sample_name,
-        flagged_pairs = n_flagged,
-        review_status = if (n_flagged > 0) {
-          "Review"
-        } else {
-          "No flagged pairs"
-        }
-      )
-    }
+  any(
+    flagged_pairs > 0,
+    na.rm = TRUE
   )
 }
 
-patient_compensaid_summary <- compensaid_summary(
-  patient_compensaid_results
-)
 
-controls_compensaid_summary <- compensaid_summary(
-  controls_compensaid_results
-)
-
-
-# ------------------------------------------------------------------------------
-# 9. HTML carousel helper
-# ------------------------------------------------------------------------------
+# HTML carousel helper
 
 make_image_carousel <- function(
   image_files,
@@ -619,22 +603,77 @@ flush.console()
 ```{r}
 #| label: executive-summary
 
-if (is.null(pipeline_summary)) {
+pipeline_status <- summary_value(
+  pipeline_summary,
+  "pipeline_status",
+  default = NA_character_
+)
+
+generated_image_count <- sum(
+  c(
+    length(variant_images),
+    length(autofluorescence_images),
+    length(scatter_images),
+    length(similarity_images),
+    length(spectra_images),
+    length(clean_control_images),
+    length(patient_gating_images),
+    length(controls_gating_images),
+    length(patient_compensaid_images),
+    length(controls_compensaid_images)
+  )
+)
+
+loaded_table_count <- sum(
+  !vapply(
+    list(
+      pipeline_summary,
+      af_status,
+      patient_unmixing_status,
+      nonpatient_unmixing_status,
+      patient_compensaid_summary,
+      controls_compensaid_summary,
+      qc_export_status
+    ),
+    is.null,
+    FUN.VALUE = logical(1)
+  )
+)
+
+if (is.na(pipeline_status)) {
   cat(
-    "⚠️ `pipeline_summary.rds` was not found. ",
+    "⚠️ Pipeline summary was not found. ",
     "The report may be rendering before the pipeline has completed."
   )
-} else if (identical(pipeline_summary$status, "completed")) {
-  cat("✅ The analysis pipeline completed successfully.")
+} else if (identical(pipeline_status, "completed")) {
+  cat(
+    "✅ The analysis pipeline completed successfully. ",
+    "Found ",
+    generated_image_count,
+    " diagnostic image(s) and ",
+    loaded_table_count,
+    " summary/status table(s).",
+    sep = ""
+  )
 } else {
-  cat("❌ The analysis pipeline did not complete successfully.")
+  cat(
+    "❌ The analysis pipeline did not complete successfully. ",
+    "Recorded status: ",
+    pipeline_status,
+    ". Found ",
+    generated_image_count,
+    " diagnostic image(s) and ",
+    loaded_table_count,
+    " summary/status table(s).",
+    sep = ""
+  )
 }
 ```
 
 ```{r}
 #| label: run-overview
 
-run_overview <- tibble::tibble(
+run_overview <- tibble(
   Metric = c(
     "Pipeline status",
     "Start time",
@@ -642,25 +681,31 @@ run_overview <- tibble::tibble(
     "Duration (minutes)",
     "Project root"
   ),
-  Value = if (is.null(pipeline_summary)) {
-    c(
-      "Unavailable",
-      "Unavailable",
-      "Unavailable",
-      "Unavailable",
-      normalizePath(".", winslash = "/", mustWork = TRUE)
+  Value = c(
+    summary_value(
+      pipeline_summary,
+      "pipeline_status"
+    ),
+    summary_value(
+      pipeline_summary,
+      "start_time"
+    ),
+    summary_value(
+      pipeline_summary,
+      "end_time"
+    ),
+    round(
+      pipeline_summary |>
+        dplyr::select("duration_minutes") |>
+        as.numeric(),
+      0
+    ),
+    summary_value(
+      pipeline_summary,
+      "project_root"
     )
-  } else {
-    c(
-      status_badge(pipeline_summary$status),
-      as.character(pipeline_summary$start_time),
-      as.character(pipeline_summary$end_time),
-      format(round(pipeline_summary$duration_minutes, 2)),
-      pipeline_summary$project_root
-    )
-  }
+  )
 )
-
 knitr::kable(run_overview)
 ```
 
@@ -670,6 +715,21 @@ knitr::kable(run_overview)
 
 ```{r}
 #| label: status-summary
+
+af_has_flags <- function(data) {
+  if (
+    is.null(data) ||
+      nrow(data) == 0 ||
+      !"af_status" %in% names(data)
+  ) {
+    return(FALSE)
+  }
+
+  any(
+    data$af_status == "flagged",
+    na.rm = TRUE
+  )
+}
 
 status_summary <- tibble::tibble(
   Stage = c(
@@ -683,11 +743,12 @@ status_summary <- tibble::tibble(
   Status = c(
     if (is.null(af_status)) {
       "Unavailable"
-    } else if (count_status(af_status, "flagged") > 0) {
+    } else if (af_has_flags(af_status)) {
       "⚠️ Review"
     } else {
       "✅ No flags"
     },
+
     if (is.null(patient_unmixing_status)) {
       "Unavailable"
     } else if (
@@ -698,6 +759,7 @@ status_summary <- tibble::tibble(
     } else {
       "✅ No flags"
     },
+
     if (is.null(nonpatient_unmixing_status)) {
       "Unavailable"
     } else if (count_status(nonpatient_unmixing_status, "failed") > 0) {
@@ -705,21 +767,33 @@ status_summary <- tibble::tibble(
     } else {
       "✅ No failures"
     },
-    if (is.null(gating_plots)) {
+
+    if (
+      length(patient_gating_images) == 0 &&
+        length(controls_gating_images) == 0
+    ) {
       "Unavailable"
     } else {
       "✅ Results available"
     },
-    if (is.null(patient_compensaid_results)) {
+
+    if (
+      is.null(patient_compensaid_summary) &&
+        length(patient_compensaid_images) == 0
+    ) {
       "Unavailable"
-    } else if (any(patient_compensaid_summary$flagged_pairs > 0)) {
+    } else if (has_compensaid_flags(patient_compensaid_summary)) {
       "⚠️ Review"
     } else {
       "✅ No flagged pairs"
     },
-    if (is.null(controls_compensaid_results)) {
+
+    if (
+      is.null(controls_compensaid_summary) &&
+        length(controls_compensaid_images) == 0
+    ) {
       "Unavailable"
-    } else if (any(controls_compensaid_summary$flagged_pairs > 0)) {
+    } else if (has_compensaid_flags(controls_compensaid_summary)) {
       "⚠️ Review"
     } else {
       "✅ No flagged pairs"
@@ -735,21 +809,30 @@ knitr::kable(status_summary)
 ```{r}
 #| label: pipeline-error
 
+error_class <- summary_value(
+  pipeline_summary,
+  "error_class",
+  default = NA_character_
+)
+
+error_message <- summary_value(
+  pipeline_summary,
+  "error_message",
+  default = NA_character_
+)
+
 if (
-  !is.null(pipeline_summary) &&
-    !is.null(pipeline_summary$error)
+  is.na(error_class) &&
+    is.na(error_message)
 ) {
+  cat("No pipeline error was recorded.")
+} else {
   knitr::kable(
     tibble::tibble(
-      Error_class = paste(
-        pipeline_summary$error$class,
-        collapse = ", "
-      ),
-      Error_message = pipeline_summary$error$message
+      Error_class = error_class,
+      Error_message = error_message
     )
   )
-} else {
-  cat("No pipeline error was recorded.")
 }
 ```
 
@@ -768,9 +851,9 @@ if (is.null(pipeline_summary)) {
       "Nonpatient samples"
     ),
     Count = c(
-      length(pipeline_summary$input$Patient_samples),
-      length(pipeline_summary$input$Patient_unstained_samples),
-      length(pipeline_summary$input$nonpatient_samples)
+      pipeline_summary$patient_sample_count[[1]],
+      pipeline_summary$patient_unstained_sample_count[[1]],
+      pipeline_summary$nonpatient_sample_count[[1]]
     )
   )
 
@@ -792,16 +875,16 @@ if (is.null(pipeline_summary)) {
       "Pipeline summary"
     ),
     Path = c(
-      pipeline_summary$output$output_folder,
-      pipeline_summary$output$unmixed_folder,
-      pipeline_summary$log_file,
+      pipeline_summary$output_folder[[1]],
+      pipeline_summary$unmixed_folder[[1]],
+      pipeline_summary$log_file[[1]],
       pipeline_summary_file
     ),
     Exists = file.exists(
       c(
-        pipeline_summary$output$output_folder,
-        pipeline_summary$output$unmixed_folder,
-        pipeline_summary$log_file,
+        pipeline_summary$output_folder[[1]],
+        pipeline_summary$unmixed_folder[[1]],
+        pipeline_summary$log_file[[1]],
         pipeline_summary_file
       )
     )
@@ -1022,16 +1105,23 @@ cat(
 ```{r}
 #| label: gating-availability
 
-if (is.null(gating_plots)) {
+if (
+  length(patient_gating_images) == 0 &&
+    length(controls_gating_images) == 0
+) {
   cat(
-    "⚠️ Gating plots were not found. Expected file: ",
-    qc_gating_plots_file
+    "⚠️ Gating images were not found. Expected folders: ",
+    patient_gating_folder,
+    " and ",
+    controls_gating_folder
   )
 } else {
   cat(
     "✅ Gating results are available. ",
-    length(gating_plots),
-    " plot object group(s) were loaded."
+    length(patient_gating_images),
+    " patient image(s) and ",
+    length(controls_gating_images),
+    " control image(s) were found."
   )
 }
 ```
@@ -1042,23 +1132,71 @@ if (is.null(gating_plots)) {
 #| label: patient-gating-plots
 #| results: asis
 
-if (!is.null(gating_plots)) {
-  if (!is.null(gating_plots$PT_ungated_NxN)) {
-    cat("### Ungated patient NxN plots\n\n")
-    print(gating_plots$PT_ungated_NxN)
-  }
+patient_ungated_images <- patient_gating_images[
+  grepl(
+    "patient_ungated_NxN",
+    basename(patient_gating_images),
+    ignore.case = TRUE
+  )
+]
 
-  if (!is.null(gating_plots$PT_cleanup_gating)) {
-    cat("\n### Patient cleanup gating plots\n\n")
-    print(gating_plots$PT_cleanup_gating)
-  }
+patient_cleanup_images <- patient_gating_images[
+  grepl(
+    "patient_cleanup_gating",
+    basename(patient_gating_images),
+    ignore.case = TRUE
+  )
+]
 
-  if (!is.null(gating_plots$PT_cleaned_NxN)) {
-    cat("\n### Gated patient NxN plots\n\n")
-    print(gating_plots$PT_cleaned_NxN)
-  }
-} else {
+patient_cleaned_images <- patient_gating_images[
+  grepl(
+    "patient_cleaned_NxN",
+    basename(patient_gating_images),
+    ignore.case = TRUE
+  )
+]
+
+if (length(patient_gating_images) == 0) {
   cat("Patient gating plots are unavailable.")
+} else {
+  if (length(patient_ungated_images) > 0) {
+    cat("### Ungated patient NxN plots\n\n")
+
+    cat(
+      make_image_carousel(
+        image_files = patient_ungated_images,
+        carousel_id = "patient-ungated-gating",
+        title = "Ungated patient NxN plots",
+        image_height = "32rem"
+      )
+    )
+  }
+
+  if (length(patient_cleanup_images) > 0) {
+    cat("\n### Patient cleanup gating plots\n\n")
+
+    cat(
+      make_image_carousel(
+        image_files = patient_cleanup_images,
+        carousel_id = "patient-cleanup-gating",
+        title = "Patient cleanup gating plots",
+        image_height = "32rem"
+      )
+    )
+  }
+
+  if (length(patient_cleaned_images) > 0) {
+    cat("\n### Gated patient NxN plots\n\n")
+
+    cat(
+      make_image_carousel(
+        image_files = patient_cleaned_images,
+        carousel_id = "patient-cleaned-gating",
+        title = "Gated patient NxN plots",
+        image_height = "32rem"
+      )
+    )
+  }
 }
 ```
 
@@ -1068,23 +1206,71 @@ if (!is.null(gating_plots)) {
 #| label: control-gating-plots
 #| results: asis
 
-if (!is.null(gating_plots)) {
-  if (!is.null(gating_plots$controls_ungated_NxN)) {
-    cat("### Ungated control NxN plots\n\n")
-    print(gating_plots$controls_ungated_NxN)
-  }
+controls_ungated_images <- controls_gating_images[
+  grepl(
+    "controls_ungated_NxN",
+    basename(controls_gating_images),
+    ignore.case = TRUE
+  )
+]
 
-  if (!is.null(gating_plots$controls_cleanup_gating)) {
-    cat("\n### Control cleanup gating plots\n\n")
-    print(gating_plots$controls_cleanup_gating)
-  }
+controls_cleanup_images <- controls_gating_images[
+  grepl(
+    "controls_cleanup_gating",
+    basename(controls_gating_images),
+    ignore.case = TRUE
+  )
+]
 
-  if (!is.null(gating_plots$controls_cleaned_NxN)) {
-    cat("\n### Gated control NxN plots\n\n")
-    print(gating_plots$controls_cleaned_NxN)
-  }
-} else {
+controls_cleaned_images <- controls_gating_images[
+  grepl(
+    "controls_cleaned_NxN",
+    basename(controls_gating_images),
+    ignore.case = TRUE
+  )
+]
+
+if (length(controls_gating_images) == 0) {
   cat("Control gating plots are unavailable.")
+} else {
+  if (length(controls_ungated_images) > 0) {
+    cat("### Ungated control NxN plots\n\n")
+
+    cat(
+      make_image_carousel(
+        image_files = controls_ungated_images,
+        carousel_id = "controls-ungated-gating",
+        title = "Ungated control NxN plots",
+        image_height = "32rem"
+      )
+    )
+  }
+
+  if (length(controls_cleanup_images) > 0) {
+    cat("\n### Control cleanup gating plots\n\n")
+
+    cat(
+      make_image_carousel(
+        image_files = controls_cleanup_images,
+        carousel_id = "controls-cleanup-gating",
+        title = "Control cleanup gating plots",
+        image_height = "32rem"
+      )
+    )
+  }
+
+  if (length(controls_cleaned_images) > 0) {
+    cat("\n### Gated control NxN plots\n\n")
+
+    cat(
+      make_image_carousel(
+        image_files = controls_cleaned_images,
+        carousel_id = "controls-cleaned-gating",
+        title = "Gated control NxN plots",
+        image_height = "32rem"
+      )
+    )
+  }
 }
 ```
 
@@ -1095,8 +1281,20 @@ if (!is.null(gating_plots)) {
 ```{r}
 #| label: patient-compensaid-summary
 
-if (is.null(patient_compensaid_results)) {
-  cat("Patient compensAID results are unavailable.")
+if (
+  is.null(patient_compensaid_summary) &&
+    length(patient_compensaid_images) == 0
+) {
+  cat(
+    "Patient compensAID results are unavailable. ",
+    "No summary table or diagnostic images were found."
+  )
+} else if (is.null(patient_compensaid_summary)) {
+  cat(
+    "Patient compensAID summary table is unavailable. ",
+    length(patient_compensaid_images),
+    " diagnostic image(s) are available for review."
+  )
 } else {
   knitr::kable(patient_compensaid_summary)
 }
@@ -1106,29 +1304,62 @@ if (is.null(patient_compensaid_results)) {
 
 ```{r}
 #| label: patient-compensaid-flags
+#| results: asis
 
-if (
-  is.null(patient_compensaid_results) ||
-    !any(patient_compensaid_summary$flagged_pairs > 0)
-) {
-  cat("✅ No patient samples contain flagged SSI pairs.")
+patient_compensaid_matrix_images <- patient_compensaid_images[
+  grepl(
+    "_SSI_matrix",
+    basename(patient_compensaid_images),
+    ignore.case = TRUE
+  )
+]
+
+if (length(patient_compensaid_matrix_images) == 0) {
+  cat("No patient compensAID SSI matrix images were found.")
 } else {
-  patient_flagged_pairs <- purrr::imap_dfr(
-    patient_compensaid_results,
-    function(result, sample_name) {
-      if (
-        is.null(result$flagged_pairs) ||
-          nrow(result$flagged_pairs) == 0
-      ) {
-        return(tibble::tibble())
-      }
+  cat(
+    make_image_carousel(
+      image_files = patient_compensaid_matrix_images,
+      carousel_id = "patient-compensaid-ssi-matrices",
+      title = "Patient compensAID SSI matrices",
+      image_height = "32rem"
+    )
+  )
+}
 
-      result$flagged_pairs |>
-        dplyr::mutate(sample = sample_name, .before = 1)
-    }
+patient_compensaid_pair_images <- patient_compensaid_images[
+  grepl(
+    "_pair_",
+    basename(patient_compensaid_images),
+    ignore.case = TRUE
+  )
+]
+
+if (is.null(patient_compensaid_summary)) {
+  cat(
+    "Patient compensAID summary is unavailable."
+  )
+} else if (!has_compensaid_flags(patient_compensaid_summary)) {
+  cat("✅ No patient samples contain flagged SSI pairs.")
+} else if (length(patient_compensaid_pair_images) == 0) {
+  cat(
+    "⚠️ Patient samples contain flagged SSI pairs, but no pair-review images ",
+    "were found."
+  )
+} else {
+  cat(
+    "⚠️ Patient samples contain flagged SSI pairs. ",
+    "Review the diagnostic pair plots below.\n\n"
   )
 
-  knitr::kable(patient_flagged_pairs)
+  cat(
+    make_image_carousel(
+      image_files = patient_compensaid_pair_images,
+      carousel_id = "patient-compensaid-flagged-pairs",
+      title = "Patient compensAID flagged-pair diagnostics",
+      image_height = "32rem"
+    )
+  )
 }
 ```
 
@@ -1138,43 +1369,39 @@ if (
 #| label: patient-compensaid-plots
 #| results: asis
 
-if (is.null(patient_compensaid_results)) {
-  cat("Patient compensAID results are unavailable.")
+patient_compensaid_matrix_images <- patient_compensaid_images[
+  grepl(
+    "_SSI_matrix",
+    basename(patient_compensaid_images),
+    ignore.case = TRUE
+  )
+]
+
+if (length(patient_compensaid_images) == 0) {
+  cat("Patient compensAID diagnostic images are unavailable.")
+} else if (length(patient_compensaid_matrix_images) == 0) {
+  cat(
+    "No patient compensAID SSI matrix images were found. ",
+    "Available diagnostic images are shown below."
+  )
+
+  cat(
+    make_image_carousel(
+      image_files = patient_compensaid_images,
+      carousel_id = "patient-compensaid-diagnostics",
+      title = "Patient compensAID diagnostic plots",
+      image_height = "32rem"
+    )
+  )
 } else {
-  flagged_samples <- patient_compensaid_results[
-    purrr::map_lgl(
-      patient_compensaid_results,
-      function(result) {
-        !is.null(result$compensaid_plots) &&
-          length(result$compensaid_plots) > 0
-      }
+  cat(
+    make_image_carousel(
+      image_files = patient_compensaid_matrix_images,
+      carousel_id = "patient-compensaid-ssi-matrices",
+      title = "Patient compensAID SSI matrices",
+      image_height = "32rem"
     )
-  ]
-
-  if (length(flagged_samples) == 0) {
-    cat("No patient diagnostic plots were generated.")
-  } else {
-    purrr::iwalk(
-      flagged_samples,
-      function(result, sample_name) {
-        cat("\n### ", sample_name, "\n\n", sep = "")
-
-        purrr::iwalk(
-          result$compensaid_plots,
-          function(plot_object, plot_index) {
-            cat(
-              "\nDiagnostic plot ",
-              plot_index,
-              "\n\n",
-              sep = ""
-            )
-
-            print(plot_object)
-          }
-        )
-      }
-    )
-  }
+  )
 }
 ```
 
@@ -1183,14 +1410,88 @@ if (is.null(patient_compensaid_results)) {
 ```{r}
 #| label: controls-compensaid-summary
 
-if (is.null(controls_compensaid_results)) {
-  cat("Control compensAID results are unavailable.")
-} else if (length(controls_compensaid_results) == 0) {
+if (
+  is.null(controls_compensaid_summary) &&
+    length(controls_compensaid_images) == 0
+) {
+  cat(
+    "Control compensAID results are unavailable. ",
+    "No summary table or diagnostic images were found."
+  )
+} else if (is.null(controls_compensaid_summary)) {
+  cat(
+    "Control compensAID summary table is unavailable. ",
+    length(controls_compensaid_images),
+    " diagnostic image(s) are available for review."
+  )
+} else if (nrow(controls_compensaid_summary) == 0) {
   cat("No control compensAID results were generated.")
 } else {
   knitr::kable(controls_compensaid_summary)
 }
 ```
+
+## Control compensAID flagged pairs
+
+```{r}
+#| label: controls-compensaid-flags
+#| results: asis
+
+controls_compensaid_matrix_images <- controls_compensaid_images[
+  grepl(
+    "_SSI_matrix",
+    basename(controls_compensaid_images),
+    ignore.case = TRUE
+  )
+]
+
+if (length(controls_compensaid_matrix_images) == 0) {
+  cat("No control compensAID SSI matrix images were found.")
+} else {
+  cat(
+    make_image_carousel(
+      image_files = controls_compensaid_matrix_images,
+      carousel_id = "controls-compensaid-ssi-matrices",
+      title = "Control compensAID SSI matrices",
+      image_height = "32rem"
+    )
+  )
+}
+
+controls_compensaid_pair_images <- controls_compensaid_images[
+  grepl(
+    "_pair_",
+    basename(controls_compensaid_images),
+    ignore.case = TRUE
+  )
+]
+
+if (is.null(controls_compensaid_summary)) {
+  cat("Control compensAID summary is unavailable.")
+} else if (!has_compensaid_flags(controls_compensaid_summary)) {
+  cat("✅ No control samples contain flagged SSI pairs.")
+} else if (length(controls_compensaid_pair_images) == 0) {
+  cat(
+    "⚠️ Control samples contain flagged SSI pairs, but no pair-review ",
+    "images were found."
+  )
+} else {
+  cat(
+    "⚠️ Control samples contain flagged SSI pairs. ",
+    "Review the diagnostic pair plots below.\n\n"
+  )
+
+  cat(
+    make_image_carousel(
+      image_files = controls_compensaid_pair_images,
+      carousel_id = "controls-compensaid-flagged-pairs",
+      title = "Control compensAID flagged-pair diagnostics",
+      image_height = "32rem"
+    )
+  )
+}
+```
+
 
 # Review checklist
 
