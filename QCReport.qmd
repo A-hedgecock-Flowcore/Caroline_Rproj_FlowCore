@@ -1,5 +1,5 @@
 ---
-title: "Flow Cytometry Analysis QC Report"
+title: "QC Report"
 subtitle: "Automated Pipeline: AutoSpectral, gating, and compensAID review"
 author: "Ayrianna Hedgecock, UNC Flow Cytometry Core Facility"
 date: last-modified

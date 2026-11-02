@@ -1,0 +1,1672 @@
+---
+title: "QC Dashboard: AutoSpectral, gating, and compensAID review"
+author: "Ayrianna Hedgecock, UNC Flow Cytometry Core Facility"
+date: last-modified
+format: 
+  dashboard:
+    theme: cosmo
+    orientation: rows
+    scrolling: true
+    toc: false
+    self-contained: false
+    embed-resources: false
+    smooth-scroll: true
+    nav-buttons: 
+      - icon: github
+        href:  https://github.com/A-hedgecock-Flowcore/Caroline_Rproj_FlowCore
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: true
+params:
+  output_folder: "Output"
+---
+
+<style>
+:root {
+  --qc-blue: #2c3e50;
+  --qc-blue-dark: #1a252f;
+  --qc-blue-light: #eaf2f8;
+
+  --qc-green: #198754;
+  --qc-green-light: #eaf7ee;
+
+  --qc-yellow: #946200;
+  --qc-yellow-light: #fff4d6;
+
+  --qc-red: #b42318;
+  --qc-red-light: #fdecec;
+
+  --qc-border: #d9dee5;
+  --qc-muted: #65717c;
+  --qc-background: #f5f7fa;
+  --qc-white: #ffffff;
+}
+
+body {
+  background: var(--qc-background);
+}
+
+#quarto-content {
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+main.content {
+    padding-top: 0.5rem;
+}
+
+.qc-dashboard-header {
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  border-radius: 0.75rem;
+  background: var(--qc-white);
+  border: 1px solid var(--qc-border);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.qc-dashboard-header h1 {
+  margin-top: 0;
+  margin-bottom: 0.25rem;
+  color: var(--qc-blue);
+}
+
+.qc-dashboard-header p {
+  color: var(--qc-muted);
+  margin-bottom: 0;
+}
+
+.qc-status-banner {
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--qc-border);
+}
+
+.qc-status-banner.success {
+  background: var(--qc-green-light);
+  border-color: #a7d8b1;
+}
+
+.qc-status-banner.review {
+  background: var(--qc-yellow-light);
+  border-color: #e5c56f;
+}
+
+.qc-status-banner.fail {
+  background: var(--qc-red-light);
+  border-color: #e2a6a1;
+}
+
+.qc-status-banner h2,
+.qc-status-banner h3 {
+  margin-top: 0;
+}
+
+.qc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 0.85rem;
+  margin: 1rem 0 1.5rem 0;
+}
+
+.qc-kpi {
+  min-height: 7rem;
+  padding: 1rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--qc-border);
+  background: #fbfcfd;
+}
+
+.qc-kpi.success {
+  background: var(--qc-green-light);
+  border-color: #a7d8b1;
+}
+
+.qc-kpi.review {
+  background: var(--qc-yellow-light);
+  border-color: #e5c56f;
+}
+
+.qc-kpi.fail {
+  background: var(--qc-red-light);
+  border-color: #e2a6a1;
+}
+
+.qc-kpi-title {
+  color: var(--qc-muted);
+  font-size: 0.86rem;
+  margin-bottom: 0.45rem;
+}
+
+.qc-kpi-value {
+  color: var(--qc-blue);
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.qc-kpi-note {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--qc-muted);
+}
+
+.qc-heading {
+  color: var(--qc-blue);
+  border-bottom: 1px solid var(--qc-border);
+  padding-bottom: 0.4rem;
+  margin-top: 1.75rem;
+}
+
+.qc-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.qc-table-wrap table {
+  width: 100%;
+}
+
+.qc-pass {
+  color: var(--qc-green);
+  font-weight: 700;
+}
+
+.qc-review {
+  color: var(--qc-yellow);
+  font-weight: 700;
+}
+
+.qc-fail {
+  color: var(--qc-red);
+  font-weight: 700;
+}
+
+.qc-muted {
+  color: var(--qc-muted);
+}
+
+.qc-image-group {
+  margin: 1.75rem 0 2.5rem 0;
+}
+
+.qc-image-group h3 {
+  color: var(--qc-blue);
+  border-bottom: 1px solid var(--qc-border);
+  padding-bottom: 0.4rem;
+}
+
+.qc-carousel {
+  position: relative;
+  width: 100%;
+  margin: 1rem 0 2rem 0;
+  padding: 0 3.5rem;
+  box-sizing: border-box;
+}
+
+.qc-carousel-window {
+  overflow: hidden;
+  width: 100%;
+  border: 1px solid #d9d9d9;
+  border-radius: 0.5rem;
+  background: #fafafa;
+}
+
+.qc-carousel-track {
+  display: flex;
+  transition: transform 0.3s ease-in-out;
+}
+
+.qc-carousel-slide {
+  min-width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.qc-carousel-slide img {
+  display: block;
+  max-width: 100%;
+  height: 32rem;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+.qc-carousel-caption {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #555;
+  overflow-wrap: anywhere;
+}
+
+.qc-carousel-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  border-radius: 50%;
+  background: #2c3e50;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.qc-carousel-button:hover {
+  background: #1a252f;
+}
+
+.qc-carousel-button.previous {
+  left: 0.25rem;
+}
+
+.qc-carousel-button.next {
+  right: 0.25rem;
+}
+
+.qc-carousel-counter {
+  margin-top: 0.5rem;
+  text-align: center;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+
+.qc-pdf-viewer {
+  width: 100%;
+  margin: 1rem 0 2rem 0;
+}
+
+.qc-pdf-viewer iframe {
+  display: block;
+  width: 100%;
+  min-height: 56rem;
+}
+
+
+@media (max-width: 700px) {
+  
+  .qc-carousel {
+    padding: 0 2.8rem;
+  }
+
+  .qc-carousel-slide img {
+    height: 20rem;
+  }
+}
+/* Prevent Quarto dashboard fill behavior from changing carousel layout */
+
+.qc-carousel.html-fill-item,
+.qc-carousel-window.html-fill-item,
+.qc-carousel-track.html-fill-item,
+.qc-carousel-slide.html-fill-item,
+.qc-carousel-caption.html-fill-item,
+.qc-carousel-counter.html-fill-item {
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+.qc-carousel-track.html-fill-container {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+}
+
+.qc-carousel-slide.html-fill-container {
+  display: block !important;
+  flex: 0 0 100% !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+}
+</style>
+
+<script>
+function qcCarouselMove(carouselId, direction) {
+  const carousel = document.getElementById(carouselId);
+
+  if (!carousel) {
+    return;
+  }
+
+  const track = carousel.querySelector(".qc-carousel-track");
+  const slides = carousel.querySelectorAll(".qc-carousel-slide");
+  const counter = carousel.querySelector(".qc-carousel-counter");
+
+  if (slides.length === 0) {
+    return;
+  }
+
+  let currentIndex = Number(carousel.dataset.currentIndex || 0);
+
+  currentIndex = currentIndex + direction;
+
+  if (currentIndex < 0) {
+    currentIndex = slides.length - 1;
+  }
+
+  if (currentIndex >= slides.length) {
+    currentIndex = 0;
+  }
+
+  carousel.dataset.currentIndex = currentIndex;
+  track.style.transform = "translateX(-" + (currentIndex * 100) + "%)";
+  counter.textContent = (currentIndex + 1) + " / " + slides.length;
+}
+
+</script>
+
+```{r}
+#| label: setup
+#| include: false
+
+# ============================================================
+# Required packages
+# ============================================================
+
+required_packages <- c(
+  "dplyr",
+  "readr",
+  "tibble",
+  "purrr",
+  "fs",
+  "htmltools",
+  "knitr"
+)
+
+missing_packages <- required_packages[
+  !vapply(
+    required_packages,
+    requireNamespace,
+    quietly = TRUE,
+    FUN.VALUE = logical(1)
+  )
+]
+
+if (length(missing_packages) > 0) {
+  stop(
+    "Missing packages required for the QC dashboard: ",
+    paste(missing_packages, collapse = ", ")
+  )
+}
+
+library(dplyr)
+library(readr)
+library(tibble)
+library(purrr)
+library(fs)
+library(htmltools)
+library(knitr)
+
+
+# ============================================================
+# Project and output paths
+# ============================================================
+
+project_root <- normalizePath(
+  getwd(),
+  winslash = "/",
+  mustWork = TRUE
+)
+
+output_folder <- params$output_folder # Quarto Output
+#output_folder <- file.path("Output")
+
+if (!fs::is_absolute_path(output_folder)) {
+  output_folder <- file.path(
+    project_root,
+    output_folder
+  )
+}
+
+output_folder <- normalizePath(
+  output_folder,
+  winslash = "/",
+  mustWork = FALSE
+)
+
+if (!dir.exists(output_folder)) {
+  stop(
+    "The configured output folder does not exist: ",
+    output_folder
+  )
+}
+
+qc_tables_folder <- file.path(
+  output_folder,
+  "qc_tables"
+)
+
+
+# ============================================================
+# File-reading helpers
+# ============================================================
+
+read_csv_if_exists <- function(path) {
+  if (!file.exists(path)) {
+    return(NULL)
+  }
+
+  readr::read_csv(
+    file = path,
+    show_col_types = FALSE
+  )
+}
+
+find_images <- function(path) {
+  if (!dir.exists(path)) {
+    return(character())
+  }
+
+  sort(
+    list.files(
+      path = path,
+      pattern = "\\.(jpg|jpeg|png)$",
+      full.names = TRUE,
+      ignore.case = TRUE
+    )
+  )
+}
+
+
+# ============================================================
+# Load QC summary tables
+# ============================================================
+
+pipeline_summary <- read_csv_if_exists(
+  file.path(
+    output_folder,
+    "pipeline_summary.csv"
+  )
+)
+
+af_status <- read_csv_if_exists(
+  file.path(
+    qc_tables_folder,
+    "patient_af_status.csv"
+  )
+)
+
+patient_unmixing_status <- read_csv_if_exists(
+  file.path(
+    qc_tables_folder,
+    "patient_unmixing_status.csv"
+  )
+)
+
+nonpatient_unmixing_status <- read_csv_if_exists(
+  file.path(
+    qc_tables_folder,
+    "nonpatient_unmixing_status.csv"
+  )
+)
+
+patient_compensaid_summary <- read_csv_if_exists(
+  file.path(
+    qc_tables_folder,
+    "patient_compensaid_summary.csv"
+  )
+)
+
+controls_compensaid_summary <- read_csv_if_exists(
+  file.path(
+    qc_tables_folder,
+    "controls_compensaid_summary.csv"
+  )
+)
+
+qc_export_status <- read_csv_if_exists(
+  file.path(
+    qc_tables_folder,
+    "qc_export_status.csv"
+  )
+)
+
+
+# ============================================================
+# Locate diagnostic image groups
+# ============================================================
+
+variant_images <- find_images(
+  file.path(
+    output_folder,
+    "variants"
+  )
+)
+
+autofluorescence_images <- find_images(
+  file.path(
+    output_folder,
+    "figure_autofluorescence"
+  )
+)
+
+scatter_images <- find_images(
+  file.path(
+    output_folder,
+    "figure_scatter"
+  )
+)
+
+similarity_images <- find_images(
+  file.path(
+    output_folder,
+    "figure_similarity_heatmap"
+  )
+)
+
+spectra_images <- find_images(
+  file.path(
+    output_folder,
+    "figure_spectra"
+  )
+)
+
+clean_control_images <- find_images(
+  file.path(
+    output_folder,
+    "figure_clean_controls"
+  )
+)
+
+patient_gating_images <- find_images(
+  file.path(
+    output_folder,
+    "qc_images",
+    "gating",
+    "patient"
+  )
+)
+
+controls_gating_images <- find_images(
+  file.path(
+    output_folder,
+    "qc_images",
+    "gating",
+    "controls"
+  )
+)
+
+patient_compensaid_images <- find_images(
+  file.path(
+    output_folder,
+    "qc_images",
+    "compensAID",
+    "patient"
+  )
+)
+
+controls_compensaid_images <- find_images(
+  file.path(
+    output_folder,
+    "qc_images",
+    "compensAID",
+    "controls"
+  )
+)
+
+
+# ============================================================
+# Derived image groups
+# ============================================================
+
+patient_compensaid_matrix_images <- patient_compensaid_images[
+  grepl(
+    "_SSI_matrix",
+    basename(patient_compensaid_images),
+    ignore.case = TRUE
+  )
+]
+
+patient_compensaid_pair_images <- patient_compensaid_images[
+  grepl(
+    "_pair_",
+    basename(patient_compensaid_images),
+    ignore.case = TRUE
+  )
+]
+
+controls_compensaid_matrix_images <- controls_compensaid_images[
+  grepl(
+    "_SSI_matrix",
+    basename(controls_compensaid_images),
+    ignore.case = TRUE
+  )
+]
+
+controls_compensaid_pair_images <- controls_compensaid_images[
+  grepl(
+    "_pair_",
+    basename(controls_compensaid_images),
+    ignore.case = TRUE
+  )
+]
+
+patient_ungated_images <- patient_gating_images[
+  grepl(
+    "patient_ungated_NxN",
+    basename(patient_gating_images),
+    ignore.case = TRUE
+  )
+]
+
+patient_cleanup_images <- patient_gating_images[
+  grepl(
+    "patient_cleanup_gating",
+    basename(patient_gating_images),
+    ignore.case = TRUE
+  )
+]
+
+patient_cleaned_images <- patient_gating_images[
+  grepl(
+    "patient_cleaned_NxN",
+    basename(patient_gating_images),
+    ignore.case = TRUE
+  )
+]
+
+controls_ungated_images <- controls_gating_images[
+  grepl(
+    "controls_ungated_NxN",
+    basename(controls_gating_images),
+    ignore.case = TRUE
+  )
+]
+
+controls_cleanup_images <- controls_gating_images[
+  grepl(
+    "controls_cleanup_gating",
+    basename(controls_gating_images),
+    ignore.case = TRUE
+  )
+]
+
+controls_cleaned_images <- controls_gating_images[
+  grepl(
+    "controls_cleaned_NxN",
+    basename(controls_gating_images),
+    ignore.case = TRUE
+  )
+]
+
+# ============================================================
+# HTML helpers
+# ============================================================
+
+escape_html <- function(x) {
+  x <- as.character(x)
+
+  x <- gsub(
+    "&",
+    "&amp;",
+    x,
+    fixed = TRUE
+  )
+
+  x <- gsub(
+    "<",
+    "&lt;",
+    x,
+    fixed = TRUE
+  )
+
+  x <- gsub(
+    ">",
+    "&gt;",
+    x,
+    fixed = TRUE
+  )
+
+  x <- gsub(
+    "\"",
+    "&quot;",
+    x,
+    fixed = TRUE
+  )
+
+  x
+}
+
+relative_image_path <- function(path) {
+  fs::path_rel(
+    normalizePath(
+      path,
+      winslash = "/",
+      mustWork = TRUE
+    ),
+    start = project_root
+  )
+}
+
+
+# ============================================================
+# Carousel generator
+# ============================================================
+
+make_image_carousel <- function(
+  image_files,
+  carousel_id,
+  title = NULL,
+  image_height = "32rem"
+) {
+  image_files <- image_files[
+    file.exists(image_files)
+  ]
+
+  if (length(image_files) == 0) {
+    return(
+      htmltools::HTML(
+        "<p>No images were found for this section.</p>"
+      )
+    )
+  }
+
+  image_files <- normalizePath(
+    image_files,
+    winslash = "/",
+    mustWork = TRUE
+  )
+
+  image_sources <- fs::path_rel(
+    image_files,
+    start = project_root
+  )
+
+  image_sources <- gsub(
+    "\\\\",
+    "/",
+    image_sources
+  )
+
+  escape_html <- function(x) {
+    x <- gsub("&", "&amp;", x, fixed = TRUE)
+    x <- gsub("<", "&lt;", x, fixed = TRUE)
+    x <- gsub(">", "&gt;", x, fixed = TRUE)
+    x <- gsub("\"", "&quot;", x, fixed = TRUE)
+    x
+  }
+
+  slides <- purrr::map2_chr(
+    image_sources,
+    basename(image_files),
+    function(image_source, image_label) {
+      paste0(
+        '<div class="qc-carousel-slide">',
+        '<img src="',
+        escape_html(image_source),
+        '" alt="',
+        escape_html(image_label),
+        '" style="height:',
+        image_height,
+        ';">',
+        '<div class="qc-carousel-caption">',
+        escape_html(image_label),
+        "</div>",
+        "</div>"
+      )
+    }
+  )
+
+  title_html <- if (is.null(title)) {
+    ""
+  } else {
+    paste0(
+      "<h4>",
+      escape_html(title),
+      "</h4>"
+    )
+  }
+
+  html <- paste0(
+    '<div class="qc-carousel" id="',
+    escape_html(carousel_id),
+    '">',
+
+    title_html,
+
+    '<button class="qc-carousel-button previous" ',
+    'type="button" aria-label="Previous image" ',
+    'onclick="qcCarouselMove(\'',
+    escape_html(carousel_id),
+    '\', -1)">',
+    "&#10094;",
+    "</button>",
+
+    '<div class="qc-carousel-window">',
+    '<div class="qc-carousel-track">',
+    paste(slides, collapse = ""),
+    "</div>",
+    "</div>",
+
+    '<button class="qc-carousel-button next" ',
+    'type="button" aria-label="Next image" ',
+    'onclick="qcCarouselMove(\'',
+    escape_html(carousel_id),
+    '\', 1)">',
+    "&#10095;",
+    "</button>",
+
+    '<div class="qc-carousel-counter">',
+    "1 / ",
+    length(slides),
+    "</div>",
+
+    "</div>"
+  )
+
+  htmltools::HTML(html)
+}
+
+
+# PDF viewer
+pdf_viewer <- function(
+  pdf_path,
+  title = "Embedded PDF report",
+  height = "900px"
+) {
+  htmltools::tags$div(
+    class = "qc-pdf-viewer",
+
+    htmltools::tags$iframe(
+      src = pdf_path,
+      title = title,
+      width = "100%",
+      height = height,
+      style = paste(
+        "border: 1px solid #d9d9d9;",
+        "border-radius: 0.5rem;",
+        "background: #fafafa;"
+      )
+    ),
+
+    htmltools::tags$p(
+      class = "qc-muted",
+      "If the PDF does not display in the browser, ",
+      htmltools::tags$a(
+        href = pdf_path,
+        target = "_blank",
+        rel = "noopener",
+        "open the PDF in a new browser tab"
+      ),
+      "."
+    )
+  )
+}
+```
+
+# Overview
+## Run Status
+
+```{r}
+#| label: overview-run-status
+#| results: asis
+
+# ------------------------------------------------------------
+# Small local helpers for this overview
+# ------------------------------------------------------------
+
+overview_value <- function(data, column, default = "Unavailable") {
+  if (
+    is.null(data) ||
+      nrow(data) == 0 ||
+      !column %in% names(data) ||
+      is.na(data[[column]][[1]])
+  ) {
+    return(default)
+  }
+
+  as.character(data[[column]][[1]])
+}
+
+overview_number <- function(data, column, default = 0) {
+  value <- overview_value(
+    data,
+    column,
+    default = NA_character_
+  )
+
+  if (is.na(value) || value == "Unavailable") {
+    return(default)
+  }
+
+  numeric_value <- suppressWarnings(
+    round(as.numeric(value), 0)
+  )
+
+  if (is.na(numeric_value)) {
+    return(default)
+  }
+
+  numeric_value
+}
+
+overview_has_flags <- function(data) {
+  if (
+    is.null(data) ||
+      nrow(data) == 0 ||
+      !"flagged_pairs" %in% names(data)
+  ) {
+    return(FALSE)
+  }
+
+  any(
+    suppressWarnings(as.numeric(data$flagged_pairs)) > 0,
+    na.rm = TRUE
+  )
+}
+
+overview_total_flags <- function(data) {
+  if (
+    is.null(data) ||
+      nrow(data) == 0 ||
+      !"flagged_pairs" %in% names(data)
+  ) {
+    return(0)
+  }
+
+  sum(
+    suppressWarnings(as.numeric(data$flagged_pairs)),
+    na.rm = TRUE
+  )
+}
+
+
+# ------------------------------------------------------------
+# Run-level values
+# ------------------------------------------------------------
+
+pipeline_status <- overview_value(
+  pipeline_summary,
+  "pipeline_status"
+)
+
+start_time <- overview_value(
+  pipeline_summary,
+  "start_time"
+)
+
+end_time <- overview_value(
+  pipeline_summary,
+  "end_time"
+)
+
+duration_minutes <- overview_number(
+  pipeline_summary,
+  "duration_minutes"
+)
+
+patient_sample_count <- overview_number(
+  pipeline_summary,
+  "patient_sample_count"
+)
+
+patient_unstained_count <- overview_number(
+  pipeline_summary,
+  "patient_unstained_sample_count"
+)
+
+nonpatient_sample_count <- overview_number(
+  pipeline_summary,
+  "nonpatient_sample_count"
+)
+
+patient_flagged_pairs <- overview_total_flags(
+  patient_compensaid_summary
+)
+
+control_flagged_pairs <- overview_total_flags(
+  controls_compensaid_summary
+)
+
+pipeline_completed <- identical(
+  tolower(pipeline_status),
+  "completed"
+)
+
+patient_compensaid_review <- overview_has_flags(
+  patient_compensaid_summary
+)
+
+control_compensaid_review <- overview_has_flags(
+  controls_compensaid_summary
+)
+
+overall_review_required <- (patient_compensaid_review ||
+  control_compensaid_review)
+
+overall_status_class <- if (!pipeline_completed) {
+  "fail"
+} else if (overall_review_required) {
+  "review"
+} else {
+  "success"
+}
+
+overall_status_label <- if (!pipeline_completed) {
+  "DO NOT PROCEED"
+} else if (overall_review_required) {
+  "PROCEED AFTER REVIEW"
+} else {
+  "READY TO PROCEED"
+}
+
+
+# ------------------------------------------------------------
+# Status banner
+# ------------------------------------------------------------
+
+cat(
+  paste0(
+    '<div class="qc-status-banner ',
+    overall_status_class,
+    '">',
+    "<h2>",
+    overall_status_label,
+    "</h2>",
+    "<p>"
+  )
+)
+
+if (!pipeline_completed) {
+  cat(
+    "The analysis pipeline did not complete successfully. ",
+    "Review the pipeline status and error information before continuing.",
+    sep = ""
+  )
+} else if (overall_review_required) {
+  cat(
+    "The analysis pipeline completed successfully, but one or more ",
+    "compensAID review items require attention before continuing.",
+    sep = ""
+  )
+} else {
+  cat(
+    "The analysis pipeline completed successfully and no automated ",
+    "QC review items were detected.",
+    sep = ""
+  )
+}
+
+cat(
+  "</p>",
+  "</div>"
+)
+
+
+# ------------------------------------------------------------
+# KPI cards
+# ------------------------------------------------------------
+
+cat('<div class="qc-kpi-grid">')
+
+cat(
+  paste0(
+    '<div class="qc-kpi ',
+    if (pipeline_completed) "success" else "fail",
+    '">',
+    '<div class="qc-kpi-title">Pipeline status</div>',
+    '<div class="qc-kpi-value">',
+    if (pipeline_completed) "Completed" else "Failed",
+    "</div>",
+    '<div class="qc-kpi-note">',
+    escape_html(pipeline_status),
+    "</div>",
+    "</div>"
+  )
+)
+
+cat(
+  paste0(
+    '<div class="qc-kpi">',
+    '<div class="qc-kpi-title">Runtime</div>',
+    '<div class="qc-kpi-value">',
+    duration_minutes,
+    "</div>",
+    '<div class="qc-kpi-note">minutes</div>',
+    "</div>"
+  )
+)
+
+cat(
+  paste0(
+    '<div class="qc-kpi">',
+    '<div class="qc-kpi-title">Patient samples</div>',
+    '<div class="qc-kpi-value">',
+    patient_sample_count,
+    "</div>",
+    '<div class="qc-kpi-note">processed</div>',
+    "</div>"
+  )
+)
+
+cat(
+  paste0(
+    '<div class="qc-kpi">',
+    '<div class="qc-kpi-title">Unstained samples</div>',
+    '<div class="qc-kpi-value">',
+    patient_unstained_count,
+    "</div>",
+    '<div class="qc-kpi-note">used for AF extraction</div>',
+    "</div>"
+  )
+)
+
+cat(
+  paste0(
+    '<div class="qc-kpi">',
+    '<div class="qc-kpi-title">Nonpatient samples</div>',
+    '<div class="qc-kpi-value">',
+    nonpatient_sample_count,
+    "</div>",
+    '<div class="qc-kpi-note">processed</div>',
+    "</div>"
+  )
+)
+
+cat(
+  paste0(
+    '<div class="qc-kpi ',
+    if (patient_compensaid_review) "review" else "success",
+    '">',
+    '<div class="qc-kpi-title">Patient compensAID</div>',
+    '<div class="qc-kpi-value">',
+    patient_flagged_pairs,
+    "</div>",
+    '<div class="qc-kpi-note">',
+    if (patient_compensaid_review) {
+      "flagged pairs requiring review"
+    } else {
+      "flagged pairs"
+    },
+    "</div>",
+    "</div>"
+  )
+)
+
+cat(
+  paste0(
+    '<div class="qc-kpi ',
+    if (control_compensaid_review) "review" else "success",
+    '">',
+    '<div class="qc-kpi-title">Control compensAID</div>',
+    '<div class="qc-kpi-value">',
+    control_flagged_pairs,
+    "</div>",
+    '<div class="qc-kpi-note">',
+    if (control_compensaid_review) {
+      "flagged pairs requiring review"
+    } else {
+      "flagged pairs"
+    },
+    "</div>",
+    "</div>"
+  )
+)
+
+cat("</div>")
+
+
+# ------------------------------------------------------------
+# Run details table
+# ------------------------------------------------------------
+
+cat('<h3 class="qc-heading">Run details</h3>')
+
+run_details <- tibble::tibble(
+  Metric = c(
+    "Pipeline status",
+    "Start time",
+    "End time",
+    "Duration (minutes)",
+    "Output folder"
+  ),
+  Value = c(
+    pipeline_status,
+    start_time,
+    end_time,
+    duration_minutes,
+    output_folder
+  )
+)
+
+cat(
+  '<div class="qc-table-wrap">'
+)
+
+print(
+  knitr::kable(
+    run_details,
+    format = "html"
+  )
+)
+
+cat("</div>")
+```
+
+
+## Needs Review
+```{r}
+#| label: overview-needs-review
+#| results: asis
+
+# ------------------------------------------------------------
+# Build review queue
+# ------------------------------------------------------------
+
+review_tables <- list()
+
+if (
+  !is.null(patient_compensaid_summary) &&
+    nrow(patient_compensaid_summary) > 0
+) {
+  review_tables[[length(review_tables) + 1]] <- patient_compensaid_summary |>
+    dplyr::mutate(
+      sample_type = "Patient"
+    )
+}
+
+if (
+  !is.null(controls_compensaid_summary) &&
+    nrow(controls_compensaid_summary) > 0
+) {
+  review_tables[[length(review_tables) + 1]] <- controls_compensaid_summary |>
+    dplyr::mutate(
+      sample_type = "Control"
+    )
+}
+
+if (length(review_tables) == 0) {
+  cat(
+    '<div class="qc-status-banner success">',
+    "<h3>No review items detected</h3>",
+    "<p>No compensAID summary results were available for review.</p>",
+    "</div>"
+  )
+} else {
+  review_queue <- dplyr::bind_rows(
+    review_tables
+  ) |>
+    dplyr::mutate(
+      flagged_pairs_numeric = suppressWarnings(
+        as.numeric(flagged_pairs)
+      )
+    ) |>
+    dplyr::filter(
+      !is.na(flagged_pairs_numeric),
+      flagged_pairs_numeric > 0
+    ) |>
+    dplyr::arrange(
+      dplyr::desc(flagged_pairs_numeric)
+    )
+
+  if (nrow(review_queue) == 0) {
+    cat(
+      '<div class="qc-status-banner success">',
+      "<h3>No flagged compensAID pairs</h3>",
+      "<p>No samples currently require compensAID review.</p>",
+      "</div>"
+    )
+  } else {
+    cat(
+      '<div class="qc-status-banner review">',
+      "<h3>Review required</h3>",
+      "<p>",
+      "The following samples contain flagged compensAID pairs. ",
+      "Open the compensAID page to inspect the diagnostic images.",
+      "</p>",
+      "</div>"
+    )
+
+    review_display <- review_queue |>
+      dplyr::transmute(
+        Type = sample_type,
+        Sample = sample,
+        `Flagged pairs` = flagged_pairs_numeric,
+        Status = review_status
+      )
+
+    cat('<div class="qc-table-wrap">')
+
+    print(
+      knitr::kable(
+        review_display,
+        format = "html"
+      )
+    )
+
+    cat("</div>")
+  }
+}
+```
+
+# Autofluorescence Review
+## AF Extraction Review
+
+```{r}
+#| label: af-extraction-review
+#| results: asis
+
+if (is.null(af_status)) {
+  cat(
+    '<div class="qc-status-banner fail">',
+    "<h3>Autofluorescence status unavailable</h3>",
+    "<p>The patient AF status table could not be found.</p>",
+    "</div>"
+  )
+} else {
+  available_count <- sum(
+    af_status$af_status == "available",
+    na.rm = TRUE
+  )
+
+  flagged_count <- sum(
+    af_status$af_status == "flagged",
+    na.rm = TRUE
+  )
+
+  other_count <- nrow(af_status) -
+    available_count -
+    flagged_count
+
+  if (flagged_count > 0) {
+    banner_class <- "review"
+    banner_title <- "Autofluorescence review required"
+    banner_message <- paste0(
+      flagged_count,
+      " patient sample(s) have flagged AF extraction results."
+    )
+  } else if (available_count == nrow(af_status)) {
+    banner_class <- "success"
+    banner_title <- "Autofluorescence extraction passed"
+    banner_message <- paste0(
+      available_count,
+      " patient AF extraction result(s) are available with no flags."
+    )
+  } else {
+    banner_class <- "review"
+    banner_title <- "Autofluorescence results require review"
+    banner_message <- paste0(
+      available_count,
+      " result(s) are available; ",
+      flagged_count,
+      " result(s) are flagged."
+    )
+  }
+
+  cat(
+    '<div class="qc-status-banner ',
+    banner_class,
+    '">',
+    "<h3>",
+    banner_title,
+    "</h3>",
+    "<p>",
+    banner_message,
+    "</p>",
+    "</div>",
+    sep = ""
+  )
+
+  cat('<div class="qc-kpi-grid">')
+
+  cat(
+    paste0(
+      '<div class="qc-kpi success">',
+      '<div class="qc-kpi-title">Available</div>',
+      '<div class="qc-kpi-value">',
+      available_count,
+      "</div>",
+      '<div class="qc-kpi-note">AF extraction results</div>',
+      "</div>"
+    )
+  )
+
+  cat(
+    paste0(
+      '<div class="qc-kpi ',
+      if (flagged_count > 0) "review" else "success",
+      '">',
+      '<div class="qc-kpi-title">Flagged</div>',
+      '<div class="qc-kpi-value">',
+      flagged_count,
+      "</div>",
+      '<div class="qc-kpi-note">requiring review</div>',
+      "</div>"
+    )
+  )
+
+  cat(
+    paste0(
+      '<div class="qc-kpi">',
+      '<div class="qc-kpi-title">Total samples</div>',
+      '<div class="qc-kpi-value">',
+      nrow(af_status),
+      "</div>",
+      '<div class="qc-kpi-note">AF status records</div>',
+      "</div>"
+    )
+  )
+
+  cat("</div>")
+
+  cat('<h3 class="qc-heading">AF extraction status</h3>')
+
+  af_summary <- tibble::tibble(
+    Status = c(
+      "Available",
+      "Flagged"
+    ),
+    Count = c(
+      available_count,
+      flagged_count
+    )
+  )
+
+  cat('<div class="qc-table-wrap">')
+
+  print(
+    knitr::kable(
+      af_summary,
+      format = "html"
+    )
+  )
+
+  cat("</div>")
+
+  cat('<h3 class="qc-heading">Patient AF records</h3>')
+
+  cat('<div class="qc-table-wrap">')
+
+  print(
+    knitr::kable(
+      af_status,
+      format = "html"
+    )
+  )
+
+  cat("</div>")
+
+  af_flags <- af_status |>
+    dplyr::filter(
+      af_status == "flagged"
+    )
+
+  cat('<h3 class="qc-heading">AF issues requiring review</h3>')
+
+  if (nrow(af_flags) == 0) {
+    cat(
+      '<div class="qc-status-banner success">',
+      "<p>No AF extraction issues were flagged.</p>",
+      "</div>"
+    )
+  } else {
+    cat('<div class="qc-table-wrap">')
+
+    print(
+      knitr::kable(
+        af_flags,
+        format = "html"
+      )
+    )
+
+    cat("</div>")
+  }
+}
+```
+
+## AF diagnostic images
+```{r}
+#| label: af-diagnostic-images
+#| results: asis
+
+cat(
+  make_image_carousel(
+    image_files = autofluorescence_images,
+    carousel_id = "autofluorescence-diagnostics",
+    title = "Patient autofluorescence diagnostics",
+    image_height = "28rem"
+  )
+)
+```
+
+
+# AutoSpectral Outputs
+## QC Report
+### Fluorophore QC Report
+```{r}
+#| label: autospectral-QC-report
+#| results: asis
+
+pdf_viewer(
+  pdf_path = "Output/figure_spectra/Automated_spectral_qc_report_refined_20261027_085745.pdf",
+  title = "Autospectral spectral QC Report",
+  height = "900px"
+)
+```
+
+### Cosine-filter report
+```{r}
+pdf_viewer(
+  pdf_path = "Output/figure_spectra/Automated_cosine_filter.pdf",
+  title = "Automated cosine-filter spectral QC report",
+  height = "900px"
+)
+```
+
+## Fluorophore Variants
+```{r}
+#| label: autospectral-fluorophore-variants
+#| results: asis
+
+cat(
+  make_image_carousel(
+    image_files = variant_images,
+    carousel_id = "autospectral-fluorophore-variants",
+    title = "Fluorophore variants",
+    image_height = "28rem"
+  )
+)
+```
+
+
+
+
+# Automated Gating Review
+##  {.tabset}
+### Patients
+```{r}
+#| label: patient-automated-gating
+#| results: asis
+
+cat(
+  make_image_carousel(
+    image_files = patient_gating_images,
+    carousel_id = "patient-automated-gating",
+    title = "Patient automated gating",
+    image_height = "32rem"
+  )
+)
+```
+
+### Controls
+```{r}
+#| label: controls-automated-gating
+#| results: asis
+
+cat(
+  make_image_carousel(
+    image_files = controls_gating_images,
+    carousel_id = "controls-automated-gating",
+    title = "Contgrols automated gating",
+    image_height = "32rem"
+  )
+)
+```
+
+# compensAID Review
+## Patients {.tabset}
+### compensAID Matrix
+```{r}
+#| label: patient-compensaid-matrix
+#| results: asis
+
+cat(
+  make_image_carousel(
+    image_files = patient_compensaid_matrix_images,
+    carousel_id = "pateint-comepensaid-matrix",
+    title = "Patient compensAID diagnostics",
+    image_height = "32rem"
+  )
+)
+```
+
+### Diagnostics plots
+```{r}
+#| label: patient-compensAID-diagnostic-plots
+#| results: asis
+
+cat(
+  make_image_carousel(
+    image_files = patient_compensaid_pair_images,
+    carousel_id = "patient-compensAID-diagnostic-plots",
+    title = "Patient unmixing diagnostic plots",
+    image_height = "32rem"
+  )
+)
+```
+
+## Controls {.tabset}
+### compensAID Matrix
+```{r}
+#| label: controls-compensaid-matrix
+#| results: asis
+
+cat(
+  make_image_carousel(
+    image_files = controls_compensaid_matrix_images,
+    carousel_id = "controls-comepensaid-matrix",
+    title = "Controls compensAID diagnostics",
+    image_height = "32rem"
+  )
+)
+```
+
+### Diagnostics Plots
+```{r}
+#| label: controls-compensAID-diagnostic-plots
+#| results: asis
+
+cat(
+  make_image_carousel(
+    image_files = controls_compensaid_pair_images,
+    carousel_id = "controls-compensAID-diagnostic-plots",
+    title = "Controls unmixing diagnostic plots",
+    image_height = "32rem"
+  )
+)
+```
