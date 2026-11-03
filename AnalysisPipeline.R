@@ -5,6 +5,7 @@
 #   02_unmixing.R
 #   03_gating.R
 #   04_compensAID.R
+#   05_export_qc.R
 #
 # Run from the project root:
 #   source("AnalysisPipeline.R")
@@ -262,4 +263,48 @@ message(
 
 if (!is.null(pipeline_error)) {
   stop(pipeline_error)
+}
+
+# ---------
+# Run Reports
+# ---------
+
+report_result <- tryCatch(
+  {
+    quarto::quarto_render(
+      input = "Reports/QCReport.qmd",
+      output_format = "all"
+    )
+
+    message("QC report rendered successfully.")
+    TRUE
+  },
+  error = function(e) {
+    message("QC report rendering failed: ", e$message)
+    FALSE
+  }
+)
+
+if (!report_result) {
+  stop("Pipeline stopped because the QC report failed to render.")
+}
+
+dashboard_result <- tryCatch(
+  {
+    quarto::quarto_render(
+      input = "Reports/QCDashboard.qmd",
+      output_format = "all"
+    )
+
+    message("QC dashboard rendered successfully.")
+    TRUE
+  },
+  error = function(e) {
+    message("QC dashboard rendering failed: ", e$message)
+    FALSE
+  }
+)
+
+if (!dashboard_result) {
+  stop("Pipeline stopped because the QC dashboard failed to render.")
 }
