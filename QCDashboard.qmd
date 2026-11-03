@@ -1454,30 +1454,6 @@ if (is.null(af_status)) {
 
   cat("</div>")
 
-  cat('<h3 class="qc-heading">AF extraction status</h3>')
-
-  af_summary <- tibble::tibble(
-    Status = c(
-      "Available",
-      "Flagged"
-    ),
-    Count = c(
-      available_count,
-      flagged_count
-    )
-  )
-
-  cat('<div class="qc-table-wrap">')
-
-  print(
-    knitr::kable(
-      af_summary,
-      format = "html"
-    )
-  )
-
-  cat("</div>")
-
   cat('<h3 class="qc-heading">Patient AF records</h3>')
 
   cat('<div class="qc-table-wrap">')
