@@ -262,7 +262,7 @@ message(
 )
 
 if (!is.null(pipeline_error)) {
-  stop(pipeline_error)
+  warning(pipeline_error)
 }
 
 # ---------

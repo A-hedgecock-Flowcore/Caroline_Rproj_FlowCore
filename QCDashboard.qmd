@@ -19,8 +19,6 @@ execute:
   warning: false
   message: false
   error: true
-params:
-  output_folder: "Output"
 ---
 
 <style>
@@ -407,27 +405,11 @@ library(knitr)
 # Project and output paths
 # ============================================================
 
-project_root <- normalizePath(
-  getwd(),
-  winslash = "/",
-  mustWork = TRUE
-)
+project_root <- here::here()
 
-# output_folder <- params$output_folder # Quarto Output
-output_folder <- file.path("Output")
+output_folder <- file.path(project_root, "Output")
+output_folder <- path_norm(output_folder)
 
-if (!fs::is_absolute_path(output_folder)) {
-  output_folder <- file.path(
-    project_root,
-    output_folder
-  )
-}
-
-output_folder <- normalizePath(
-  output_folder,
-  winslash = "/",
-  mustWork = FALSE
-)
 
 if (!dir.exists(output_folder)) {
   stop(
@@ -435,6 +417,7 @@ if (!dir.exists(output_folder)) {
     output_folder
   )
 }
+
 
 qc_tables_folder <- file.path(
   output_folder,
@@ -732,17 +715,6 @@ escape_html <- function(x) {
   x
 }
 
-relative_image_path <- function(path) {
-  fs::path_rel(
-    normalizePath(
-      path,
-      winslash = "/",
-      mustWork = TRUE
-    ),
-    start = project_root
-  )
-}
-
 
 # ============================================================
 # Carousel generator
@@ -774,7 +746,7 @@ make_image_carousel <- function(
 
   image_sources <- fs::path_rel(
     image_files,
-    start = project_root
+    start = fs::path_dir(knitr::current_input())
   )
 
   image_sources <- gsub(
