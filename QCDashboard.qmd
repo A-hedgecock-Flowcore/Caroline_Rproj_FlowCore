@@ -8,8 +8,7 @@ format:
     orientation: rows
     scrolling: true
     toc: false
-    self-contained: false
-    embed-resources: false
+    embed-resources: true
     smooth-scroll: true
     nav-buttons: 
       - icon: github

@@ -272,7 +272,7 @@ if (!is.null(pipeline_error)) {
 report_result <- tryCatch(
   {
     quarto::quarto_render(
-      input = "Reports/QCReport.qmd",
+      input = "QCReport.qmd",
       output_format = "all"
     )
 
@@ -292,7 +292,7 @@ if (!report_result) {
 dashboard_result <- tryCatch(
   {
     quarto::quarto_render(
-      input = "Reports/QCDashboard.qmd",
+      input = "QCDashboard.qmd",
       output_format = "all"
     )
 
