@@ -3,7 +3,13 @@
 .RData
 .Ruserdata
 .fcs
+<<<<<<< Updated upstream
 /Output/
 /.quarto/
 /_site/
 **/*.quarto_ipynb
+=======
+Output/
+/.quarto/
+/_site/
+>>>>>>> Stashed changes

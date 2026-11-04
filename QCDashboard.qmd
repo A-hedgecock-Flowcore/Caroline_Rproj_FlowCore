@@ -8,7 +8,11 @@ format:
     orientation: rows
     scrolling: true
     toc: false
+<<<<<<< Updated upstream
     embed-resources: false
+=======
+    embed-resources: true
+>>>>>>> Stashed changes
     smooth-scroll: true
     nav-buttons: 
       - icon: github
