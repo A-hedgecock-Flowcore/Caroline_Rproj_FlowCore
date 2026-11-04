@@ -3,7 +3,7 @@
 .RData
 .Ruserdata
 .fcs
-Output/
+/Output/
 /.quarto/
 /_site/
 **/*.quarto_ipynb

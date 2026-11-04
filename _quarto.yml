@@ -5,9 +5,9 @@ website:
   title: "Quality Control Reports"
   navbar:
     left:
-      - href: QCReport.html
+      - href: QCReport.qmd
         text: QC Report
-      - href: QCDashboard.html
+      - href: QCDashboard.qmd
         text: QC Dashboard
 
 format:
