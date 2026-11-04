@@ -1,3 +1,5 @@
+output_folder <- file.path(analysis_parameters$output_folder)
+
 # Required Output Dirs
 export_required_output_dirs <- c(
   file.path(output_folder, "qc_images"),

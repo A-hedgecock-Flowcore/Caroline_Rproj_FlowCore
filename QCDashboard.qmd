@@ -406,7 +406,8 @@ library(knitr)
 
 project_root <- here::here()
 
-output_folder <- file.path(project_root, "Output")
+output_folder <- file.path(project_root, analysis_parameters$output_folder)
+
 output_folder <- path_norm(output_folder)
 
 

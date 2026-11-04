@@ -20,8 +20,6 @@ execute:
   warning: false
   message: false
   error: true
-params: 
-  output_folder: "Output"
 ---
 
 <style>
@@ -191,8 +189,7 @@ project_root <- normalizePath(
   mustWork = TRUE
 )
 
-# output_folder <- params$output_folder # Quarto rendering
-output_folder <- file.path("Output") # TESTING
+output_folder <- file.path(project_root, analysis_parameters$output_folder)
 
 if (!fs::is_absolute_path(output_folder)) {
   output_folder <- file.path(

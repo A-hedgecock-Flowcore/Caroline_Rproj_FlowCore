@@ -1,4 +1,4 @@
-# AnalysisPipeline.R
+# QCPipeline.R
 #
 # Top-level driver for:
 #   01_setup.R
@@ -8,10 +8,10 @@
 #   05_export_qc.R
 #
 # Run from the project root:
-#   source("AnalysisPipeline.R")
+#   source("QCPipeline.R")
 #
 # Or from a terminal:
-#   Rscript AnalysisPipeline.R
+#   Rscript QCPipeline.R
 
 options(
   stringsAsFactors = FALSE,
@@ -59,7 +59,9 @@ if (length(missing_directories) > 0) {
   )
 }
 
-log_directory <- file.path(project_root, "Output", "logs")
+output_folder <- analysis_parameters$output_folder
+
+log_directory <- file.path(project_root, output_folder, "logs")
 
 dir.create(
   log_directory,

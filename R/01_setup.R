@@ -58,36 +58,80 @@ if (length(parameters_file) != 1) {
 
 analysis_parameters <- yaml::read_yaml(parameters_file)
 
-input_folder <- file.path(analysis_parameters$input_folder)
+if (dir.exists(file.path(analysis_parameters$input_folder))) {
+  input_folder <- file.path(analysis_parameters$input_folder)
+} else {
+  dir.create(file.path(analysis_parameters$input_folder))
+  input_folder <- file.path(analysis_parameters$input_folder)
+}
 
-output_folder <- file.path(analysis_parameters$output_folder)
+if (dir.exists(file.path(analysis_parameters$output_folder))) {
+  output_folder <- file.path(analysis_parameters$output_folder)
+} else {
+  dir.create(file.path(analysis_parameters$output_folder))
+  output_folder <- file.path(analysis_parameters$output_folder)
+}
 
-single_color_control_folder <- file.path(
-  input_folder,
-  analysis_parameters$single_color_controls_folder
-)
+if (
+  dir.exists(file.path(
+    analysis_parameters$input_folder,
+    analysis_parameters$single_color_controls_folder
+  ))
+) {
+  single_color_control_folder <- file.path(
+    analysis_parameters$input_folder,
+    analysis_parameters$single_color_controls_folder
+  )
+} else {
+  dir.create(file.path(
+    analysis_parameters$input_folder,
+    analysis_parameters$single_color_controls_folder
+  ))
+  single_color_control_folder <- file.path(
+    analysis_parameters$input_folder,
+    analysis_parameters$single_color_controls_folder
+  )
+}
 
-samples_folder <- file.path(
-  input_folder,
-  analysis_parameters$samples_folder
-)
+if (
+  dir.exists(file.path(
+    analysis_parameters$input_folder,
+    analysis_parameters$samples_folder
+  ))
+) {
+  single_color_control_folder <- file.path(
+    analysis_parameters$input_folder,
+    analysis_parameters$samples_folder
+  )
+} else {
+  dir.create(file.path(
+    analysis_parameters$input_folder,
+    analysis_parameters$samples_folder
+  ))
+  single_color_control_folder <- file.path(
+    analysis_parameters$input_folder,
+    analysis_parameters$samples_folder
+  )
+}
 
-unmixed_folder <- file.path(
-  output_folder,
-  analysis_parameters$unmixed_folder
-)
-
-required_input_dirs <- c(
-  single_color_control_folder,
-  samples_folder
-)
-
-missing_input_dirs <- required_input_dirs[!dir.exists(required_input_dirs)]
-
-if (length(missing_input_dirs) > 0) {
-  stop(
-    "Missing input directories: ",
-    paste(missing_input_dirs, collapse = ", ")
+if (
+  dir.exists(file.path(
+    analysis_parameters$output_folder,
+    analysis_parameters$unmixed_folder
+  ))
+) {
+  unmixed_folder <- file.path(
+    analysis_parameters$output_folder,
+    analysis_parameters$unmixed_folder
+  )
+} else {
+  dir.create(file.path(
+    analysis_parameters$output_folder,
+    analysis_parameters$unmixed_folder
+  ))
+  unmixed_folder <- file.path(
+    analysis_parameters$output_folder,
+    analysis_parameters$unmixed_folder
   )
 }
 
