@@ -99,7 +99,7 @@ if (
     analysis_parameters$samples_folder
   ))
 ) {
-  single_color_control_folder <- file.path(
+  samples_folder <- file.path(
     analysis_parameters$input_folder,
     analysis_parameters$samples_folder
   )
