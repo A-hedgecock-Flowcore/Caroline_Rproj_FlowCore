@@ -1,4 +1,4 @@
-# Caroline_Rproj_FlowCore
+# Custom Flow Cytometry Analysis Pipeline
 
 This is a project to creates a semi-automated flow cytometry analysis pipeline for Caroline Stockwell. Stated goals for this script are:
 
