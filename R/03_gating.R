@@ -53,7 +53,7 @@ if (length(unmixed_controls) == 0) {
 # Transform data
 ## PT_gs
 parameters <- colnames(PT_gs)
-flurophores_only <- parameters[!str_detect(parameters, "Time|FSC|SSC|Index")]
+flurophores_only <- parameters[!str_detect(parameters, "Time|FSC|SSC|AF")]
 
 ### transformation
 Biexponential <- flowjo_biexp_trans(
@@ -90,8 +90,7 @@ PT_ungated_nxn <- Utility_NbyNPlots(
   PT_gs,
   sample.name = "TUBENAME",
   outpath = output_folder,
-  ycolumn = "PE-Cy7-A", # CD45
-  bins = 500,
+  ycolumn = "SSC-A",
   returntype = "patchwork"
 )
 if (!is.null(controls_gs)) {
@@ -99,8 +98,7 @@ if (!is.null(controls_gs)) {
     controls_gs,
     sample.name = "TUBENAME",
     outpath = output_folder,
-    ycolumn = "PE-Cy7-A", # CD45
-    bins = 500,
+    ycolumn = "SSC-A",
     returntype = "patchwork"
   )
 }
@@ -127,11 +125,22 @@ if (!is.null(controls_gs)) {
 }
 
 # Save GatingSet
-PT_gs_save_path <- file.path(output_folder, "PT_GatingSet")
+GatingSetTimestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
+PT_gs_save_path <- file.path(
+  output_folder,
+  paste0("PT_GatingSet", "_", GatingSetTimestamp)
+)
 save_gs(PT_gs, path = PT_gs_save_path)
 
 if (!is.null(controls_gs)) {
-  controls_gs_save_path <- file.path(output_folder, "controls_GatingSet")
+  controls_gs_save_path <- file.path(
+    output_folder,
+    paste0(
+      "controls_GatingSet",
+      "_",
+      GatingSetTimestamp
+    )
+  )
   save_gs(controls_gs, path = controls_gs_save_path)
 }
 
@@ -139,18 +148,16 @@ if (!is.null(controls_gs)) {
 PT_cleanup_nxn_GatingPlots <- Utility_NbyNPlots(
   PT_gs,
   sample.name = "TUBENAME",
-  gatesubset = "singletsSSC",
-  ycolumn = "PE-Cy7-A",
-  bins = 500
+  gatesubset = "singlets",
+  ycolumn = "SSC-A"
 )
 
 if (!is.null(controls_gs)) {
   controls_cleanup_nxn_GatingPlots <- Utility_NbyNPlots(
     controls_gs,
     sample.name = "TUBENAME",
-    gatesubset = "singletsSSC",
-    ycolumn = "PE-Cy7-A",
-    bins = 500
+    gatesubset = "singlets",
+    ycolumn = "SSC-A"
   )
 }
 

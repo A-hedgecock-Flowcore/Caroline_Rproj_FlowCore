@@ -44,8 +44,7 @@ required_directories <- c(
   "Input",
   "Input/SCC",
   "Input/Samples",
-  "R",
-  "Output"
+  "R"
 )
 
 missing_directories <- required_directories[
@@ -58,6 +57,26 @@ if (length(missing_directories) > 0) {
     paste(missing_directories, collapse = ", ")
   )
 }
+
+analysisInfo_folder <- file.path("AnalysisInfo")
+parameters_file <- list.files(
+  analysisInfo_folder,
+  "\\.yml$",
+  full.names = TRUE,
+  ignore.case = TRUE
+)
+
+if (length(parameters_file) != 1) {
+  stop(
+    "Expected exactly one (1) .yml (YAML) parameter file in ",
+    analysisInfo_folder,
+    ". Found ",
+    length(parameters_file),
+    "."
+  )
+}
+
+analysis_parameters <- yaml::read_yaml(parameters_file)
 
 output_folder <- analysis_parameters$output_folder
 
@@ -247,6 +266,40 @@ saveRDS(
   )
 )
 
+pipeline_summary_csv <- data.frame(
+  pipeline_status = pipeline_summary$status,
+  start_time = format(pipeline_summary$start_time, "%Y-%m-%d %H:%M:%S"),
+  end_time = format(pipeline_summary$end_time, "%Y-%m-%d %H:%M:%S"),
+  duration_minutes = pipeline_summary$duration_minutes,
+  project_root = pipeline_summary$project_root,
+  patient_sample_count = length(pipeline_summary$input$Patient_samples),
+  patient_unstained_sample_count = length(
+    pipeline_summary$input$Patient_unstained_samples
+  ),
+  nonpatient_sample_count = length(pipeline_summary$input$nonpatient_samples),
+  output_folder = pipeline_summary$output$output_folder,
+  unmixed_folder = pipeline_summary$output$unmixed_folder,
+  log_file = pipeline_summary$log_file,
+  error_class = if (is.null(pipeline_summary$error)) {
+    NA_character_
+  } else {
+    paste(pipeline_summary$error$class, collapse = "; ")
+  },
+  error_message = if (is.null(pipeline_summary$error)) {
+    NA_character_
+  } else {
+    pipeline_summary$error$message
+  },
+  stringsAsFactors = FALSE
+)
+
+utils::write.csv(
+  pipeline_summary_csv,
+  file = file.path(summary_output_folder, "pipeline_summary.csv"),
+  row.names = FALSE,
+  na = ""
+)
+
 message(
   "Pipeline status: ",
   pipeline_status
@@ -254,7 +307,7 @@ message(
 
 message(
   "Pipeline duration: ",
-  round(pipeline_summary$duration_minutes, 2),
+  round(as.numeric(pipeline_summary$duration_minutes[[1]], 0)),
   " minutes"
 )
 
@@ -311,13 +364,13 @@ if (!dashboard_result) {
   stop("Pipeline stopped because the QC dashboard failed to render.")
 }
 
-publish_status <- system2(
-  command = quarto::quarto_path(),
-  args = c(
-    "publish",
-    "gh-pages",
-    "--no-render",
-    "--no-prompt",
-    "--no-browser"
-  )
-)
+# publish_status <- system2(
+#   command = quarto::quarto_path(),
+#   args = c(
+#     "publish",
+#     "gh-pages",
+#     "--no-render",
+#     "--no-prompt",
+#     "--no-browser"
+#   )
+# )

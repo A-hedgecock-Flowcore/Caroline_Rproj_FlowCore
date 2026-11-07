@@ -58,8 +58,6 @@ Project Root/
 │   ├── fcs_control_file.csv
 │   ├── gatingTemplate.csv
 │   └── parameters.yml
-├── Output/
-│   └── Unmixed_files/
 ├── QCPipeline.R
 ├── QCDashboard.R
 ├── QCReport.R
@@ -71,7 +69,7 @@ Project Root/
 
 If the folder names are different than above, update the `parameters.yml` file.
 
-The pipeline will create all additional required folders under `Output/`.
+The pipeline will create all additional required folders under `Output/` (created by pipeline).
 
 The R files can all be found in [GitHub](https://github.com/A-hedgecock-Flowcore/Caroline_Rproj_FlowCore).
 
@@ -80,7 +78,7 @@ The R files can all be found in [GitHub](https://github.com/A-hedgecock-Flowcore
 See Control File information here: [Control File- AutoSpectral](https://drcytometer.github.io/AutoSpectral/articles/02_Control_File_example.html) The main structural elements to the control file are the following columns. Note, we will be using the `get.spectra.automated()` function, so the "legacy" columns are not needed. Read more in linked article.
 
 | Column | Description |
-|--------------------|----------------------------------------------------|
+|-----------------------|-------------------------------------------------|
 | `filename` | The actual .fcs filename |
 | `fluorophore` | The name of the fluorophore (or AF/negative in case of the unstained) |
 | `marker` | The name of the marker (or left empty in the case of the unstained) |
@@ -133,7 +131,7 @@ asp <- AutoSpectral::get.autospectral.param(cytometer = "aurora")
 filename <- file.path("AnalysisInfo", "fcs_control_file.csv") # if changed, update parameters.yml file 
 
 
-check.control.file(
+AutoSpectral::check.control.file(
   control.dir,
   control.def.file = filename,
   asp
@@ -145,7 +143,7 @@ check.control.file(
 The `AnalysisInfo/parameters.yml` file contains project-specific paths and settings, including the input folders, output folders, and AutoSpectral control-file name. Update this file if the project structure changes.
 
 | Parameter | Description |
-|---------------------|---------------------------------------------------|
+|-------------------------|-----------------------------------------------|
 | `input_folder` | Folder name of the folder the files to run the pipeline on. Default is "Input". |
 | `output_folder` | Folder name of the folder to put all outputs of the pipeline into. Default is "Output". |
 | `single_color_controls_folder` | Folder name within the `input_folder` that contains the single color controls and unstained controls of the experiment. Default is "SCC" |
@@ -156,6 +154,7 @@ The `AnalysisInfo/parameters.yml` file contains project-specific paths and setti
 | `patient_unstained_pattern` | RegEx pattern to find the unstained patient .fcs files. The default is based on the pattern "PT160 unstained (Cells).fcs" |
 | `gatingTemplate` | Filename of the `openCyto` gatingTemplate .csv file. Default is "gatingTemplate.csv" |
 | `AutoSpectral_control_file_name` | Filename of the `AutoSpectral` control file. Default is "fcs_control_file" |
+| `AutoSpectral_control_file_validated` | Logical. If the R shiny app was used to create the control file, the file is automatically validated. If not, needs to be validated prior to running unmixing. Default is TRUE. |
 
 ## Running the QC Pipeline
 

@@ -222,7 +222,10 @@ unmix_match_af <- function(sample) {
         af.spectra = af_spectra,
         spectra.variants = fluorophore_variants,
         speed = "slow",
-        output.dir = unmixed_folder,
+        output.dir = file.path(
+          output_folder,
+          analysis_parameters$unmixed_folder
+        ),
         verbose = FALSE,
         pipeline = "joint",
         estimate.time = FALSE

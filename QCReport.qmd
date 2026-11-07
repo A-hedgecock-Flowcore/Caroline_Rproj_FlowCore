@@ -188,6 +188,14 @@ project_root <- normalizePath(
   winslash = "/",
   mustWork = TRUE
 )
+analysisInfo_folder <- file.path("AnalysisInfo")
+parameters_file <- list.files(
+  analysisInfo_folder,
+  "\\.yml$",
+  full.names = TRUE,
+  ignore.case = TRUE
+)
+analysis_parameters <- yaml::read_yaml(parameters_file)
 
 output_folder <- file.path(project_root, analysis_parameters$output_folder)
 
@@ -197,12 +205,6 @@ if (!fs::is_absolute_path(output_folder)) {
     output_folder
   )
 }
-
-output_folder <- normalizePath(
-  output_folder,
-  winslash = "/",
-  mustWork = FALSE
-)
 
 if (!dir.exists(output_folder)) {
   stop(
@@ -282,17 +284,17 @@ qc_tables_folder <- file.path(
 )
 
 patient_af_status_file <- file.path(
-  qc_tables_folder,
+  output_folder,
   "patient_af_status.csv"
 )
 
 patient_unmixing_status_file <- file.path(
-  qc_tables_folder,
+  output_folder,
   "patient_unmixing_status.csv"
 )
 
 nonpatient_unmixing_status_file <- file.path(
-  qc_tables_folder,
+  output_folder,
   "nonpatient_unmixing_status.csv"
 )
 
@@ -691,12 +693,7 @@ run_overview <- tibble(
       pipeline_summary,
       "end_time"
     ),
-    round(
-      pipeline_summary |>
-        dplyr::select("duration_minutes") |>
-        as.numeric(),
-      0
-    ),
+    round(as.numeric(pipeline_summary$duration_minutes), 0),
     summary_value(
       pipeline_summary,
       "project_root"

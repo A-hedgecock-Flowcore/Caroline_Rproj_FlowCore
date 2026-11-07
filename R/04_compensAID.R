@@ -39,7 +39,7 @@ PT_flowframes <- map(
     get_gated_flowFrame(
       gating_set = PT_gs,
       sample_index = i,
-      population = "singletsSSC",
+      population = "singlets",
       markers_only = TRUE
     )
   }
@@ -67,7 +67,7 @@ if (!is.null(controls_gs)) {
       get_gated_flowFrame(
         gating_set = controls_gs,
         sample_index = i,
-        population = "singletsSSC",
+        population = "singlets",
         markers_only = TRUE
       )
     }

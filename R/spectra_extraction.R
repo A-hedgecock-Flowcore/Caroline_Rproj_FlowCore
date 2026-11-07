@@ -63,7 +63,7 @@ spectra_extraction <- function(
     ))
   } else {
     # if no file exists, create
-    full_control_dir <- normalizePath(control.dir, mustWork = TRUE)
+    full_control_dir <- normalizePath(control_dir, mustWork = TRUE)
     full_control_filename <- normalizePath(control_filename, mustWork = TRUE)
 
     spectra <- withr::with_dir(

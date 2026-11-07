@@ -406,9 +406,19 @@ library(knitr)
 
 project_root <- here::here()
 
+analysisInfo_folder <- file.path("AnalysisInfo")
+parameters_file <- list.files(
+  analysisInfo_folder,
+  "\\.yml$",
+  full.names = TRUE,
+  ignore.case = TRUE
+)
+analysis_parameters <- yaml::read_yaml(parameters_file)
+
+
 output_folder <- file.path(project_root, analysis_parameters$output_folder)
 
-output_folder <- path_norm(output_folder)
+output_folder <- fs::path_norm(output_folder)
 
 
 if (!dir.exists(output_folder)) {
@@ -469,21 +479,21 @@ pipeline_summary <- read_csv_if_exists(
 
 af_status <- read_csv_if_exists(
   file.path(
-    qc_tables_folder,
+    output_folder,
     "patient_af_status.csv"
   )
 )
 
 patient_unmixing_status <- read_csv_if_exists(
   file.path(
-    qc_tables_folder,
+    output_folder,
     "patient_unmixing_status.csv"
   )
 )
 
 nonpatient_unmixing_status <- read_csv_if_exists(
   file.path(
-    qc_tables_folder,
+    output_folder,
     "nonpatient_unmixing_status.csv"
   )
 )
@@ -501,14 +511,6 @@ controls_compensaid_summary <- read_csv_if_exists(
     "controls_compensaid_summary.csv"
   )
 )
-
-qc_export_status <- read_csv_if_exists(
-  file.path(
-    qc_tables_folder,
-    "qc_export_status.csv"
-  )
-)
-
 
 # ============================================================
 # Locate diagnostic image groups
@@ -1083,7 +1085,7 @@ cat(
     '">',
     '<div class="qc-kpi-title">Pipeline status</div>',
     '<div class="qc-kpi-value">',
-    if (pipeline_completed) "Completed" else "Failed",
+    if (pipeline_completed) "Complete" else "Failed",
     "</div>",
     '<div class="qc-kpi-note">',
     escape_html(pipeline_status),
@@ -1490,8 +1492,18 @@ cat(
 #| label: autospectral-QC-report
 #| results: asis
 
+figure_spectra_folder <- file.path(output_folder, "figure_spectra")
+spectral_qc_file <- list.files(
+  path = figure_spectra_folder,
+  pattern = "Automated_spectral_qc_report",
+  full.names = FALSE,
+  ignore.case = TRUE
+)
+
+spectral_qc_filepath <- file.path("Output", "figure_spectra", spectral_qc_file)
+
 pdf_viewer(
-  pdf_path = "Output/figure_spectra/Automated_spectral_qc_report_refined_20261027_085745.pdf",
+  pdf_path = spectral_qc_filepath,
   title = "Autospectral spectral QC Report",
   height = "900px"
 )

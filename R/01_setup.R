@@ -58,18 +58,12 @@ if (length(parameters_file) != 1) {
 
 analysis_parameters <- yaml::read_yaml(parameters_file)
 
+# Required input folders
+
 if (dir.exists(file.path(analysis_parameters$input_folder))) {
   input_folder <- file.path(analysis_parameters$input_folder)
 } else {
-  dir.create(file.path(analysis_parameters$input_folder))
-  input_folder <- file.path(analysis_parameters$input_folder)
-}
-
-if (dir.exists(file.path(analysis_parameters$output_folder))) {
-  output_folder <- file.path(analysis_parameters$output_folder)
-} else {
-  dir.create(file.path(analysis_parameters$output_folder))
-  output_folder <- file.path(analysis_parameters$output_folder)
+  stop("Need to create the ", analysisInfo_folder$input_folder, " folder.")
 }
 
 if (
@@ -83,13 +77,10 @@ if (
     analysis_parameters$single_color_controls_folder
   )
 } else {
-  dir.create(file.path(
-    analysis_parameters$input_folder,
-    analysis_parameters$single_color_controls_folder
-  ))
-  single_color_control_folder <- file.path(
-    analysis_parameters$input_folder,
-    analysis_parameters$single_color_controls_folder
+  stop(
+    "Need to create the ",
+    analysis_parameters$single_color_controls_folder,
+    " folder."
   )
 }
 
@@ -104,44 +95,22 @@ if (
     analysis_parameters$samples_folder
   )
 } else {
-  dir.create(file.path(
-    analysis_parameters$input_folder,
-    analysis_parameters$samples_folder
-  ))
-  single_color_control_folder <- file.path(
-    analysis_parameters$input_folder,
-    analysis_parameters$samples_folder
+  stop(
+    "Need to create the ",
+    analysis_parameters$samples_folder,
+    " folder."
   )
 }
-
-if (
-  dir.exists(file.path(
-    analysis_parameters$output_folder,
-    analysis_parameters$unmixed_folder
-  ))
-) {
-  unmixed_folder <- file.path(
-    analysis_parameters$output_folder,
-    analysis_parameters$unmixed_folder
-  )
-} else {
-  dir.create(file.path(
-    analysis_parameters$output_folder,
-    analysis_parameters$unmixed_folder
-  ))
-  unmixed_folder <- file.path(
-    analysis_parameters$output_folder,
-    analysis_parameters$unmixed_folder
-  )
-}
+# Required output folders
+output_folder <- file.path(analysis_parameters$output_folder)
 
 required_output_directories <- c(
   output_folder,
-  unmixed_folder,
   file.path(output_folder, "table_spectra"),
   file.path(output_folder, "compensAID"),
   file.path(output_folder, "logs"),
-  file.path(output_folder, "variants")
+  file.path(output_folder, "variants"),
+  file.path(output_folder, analysis_parameters$unmixed_folder)
 )
 
 purrr::walk(
