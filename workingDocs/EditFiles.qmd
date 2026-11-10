@@ -3,3 +3,54 @@ title: WorkingDoc - manually edit gating
 format: html
 ---
 
+To interactively gate in R
+```{r}
+#| label: setup
+library(flowGate)
+```
+
+## flowGate
+
+Adjust gates through gatingSet
+
+```{r}
+#| label: view gates
+plot(PT_gs) # check gate names in gatingSet
+```
+
+```{r}
+#| label: Adjust gates in Shiny App
+gs_apply_gate_check(
+  gs = PT_gs,
+  gate = "singlets", # change to gate to adjust. case sensitive.
+  AdjustAll = FALSE # set to TRUE if the changed gate should apply to all samples
+)
+```
+
+
+```{r}
+#| label: Check all gates on samples again
+
+Adjusted_Gates <- Utility_GatingPlots(
+  PT_gs,
+  sample.name = "TUBENAME",
+  gtFile = cleanup_gates,
+  returnType = "patchwork",
+  removestrings = ".fcs"
+)
+Adjusted_Gates
+```
+
+
+```{r}
+#| label: Check NxN 
+
+NxN_adjusted_gates <- Utility_NbyNPlots(
+  PT_gs,
+  sample.name = "TUBENAME",
+  gatesubset = "singlets",
+  ycolumn = "SSC-A"
+)
+
+NxN_adjusted_gates
+```

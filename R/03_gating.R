@@ -104,6 +104,18 @@ PT_flowframes <- map(
 
 names(PT_flowframes) <- sampleNames(PT_gs)
 
+PT_flowframes <- purrr::imap(
+  PT_flowframes,
+  \(flow_frame, sample_name) {
+    PeacoQC::RemoveMargins(
+      ff = flow_frame,
+      channels = parameters,
+      output = "frame"
+    )
+  }
+)
+
+
 PT_PeacoQC_results <- purrr::imap(
   PT_flowframes,
   \(flow_frame, sample_name) {
@@ -145,6 +157,7 @@ if (!is.null(controls_gs)) {
 
 # Cleaup Gates
 gt_gating(Template, PT_gs)
+
 PT_cleanup_GatingPlots <- Utility_GatingPlots(
   PT_gs,
   sample.name = "TUBENAME",
@@ -155,12 +168,31 @@ PT_cleanup_GatingPlots <- Utility_GatingPlots(
 
 if (!is.null(controls_gs)) {
   gt_gating(Template, controls_gs)
+
   controls_cleanup_GatingPlots <- Utility_GatingPlots(
     controls_gs,
     sample.name = "TUBENAME",
     gtFile = cleanup_gates,
     returnType = "patchwork",
     removestrings = ".fcs"
+  )
+}
+
+
+# NxN after gating
+PT_cleanup_nxn_GatingPlots <- Utility_NbyNPlots(
+  PT_gs,
+  sample.name = "TUBENAME",
+  gatesubset = "singlets",
+  ycolumn = "SSC-A"
+)
+
+if (!is.null(controls_gs)) {
+  controls_cleanup_nxn_GatingPlots <- Utility_NbyNPlots(
+    controls_gs,
+    sample.name = "TUBENAME",
+    gatesubset = "singlets",
+    ycolumn = "SSC-A"
   )
 }
 
@@ -182,23 +214,6 @@ if (!is.null(controls_gs)) {
     )
   )
   save_gs(controls_gs, path = controls_gs_save_path)
-}
-
-# NxN after gating
-PT_cleanup_nxn_GatingPlots <- Utility_NbyNPlots(
-  PT_gs,
-  sample.name = "TUBENAME",
-  gatesubset = "singlets",
-  ycolumn = "PE-Cy7-A"
-)
-
-if (!is.null(controls_gs)) {
-  controls_cleanup_nxn_GatingPlots <- Utility_NbyNPlots(
-    controls_gs,
-    sample.name = "TUBENAME",
-    gatesubset = "singlets",
-    ycolumn = "SSC-A"
-  )
 }
 
 # save plots
