@@ -2,17 +2,11 @@
 cleanup_gates <- data.table::fread(CleanUpGatingTemplateFile)
 Template <- gatingTemplate(cleanup_gates)
 
-# Create GatingSets
+# PT
+## Create GatingSets
 AutoSpectral_unmixed_files <- list.files(
   path = unmixed_folder,
   pattern = "AutoSpectral\\.fcs$",
-  full.names = TRUE,
-  ignore.case = TRUE
-)
-
-unmixed_controls <- list.files(
-  path = unmixed_folder,
-  pattern = "FastPoisson\\.fcs$",
   full.names = TRUE,
   ignore.case = TRUE
 )
@@ -33,23 +27,6 @@ PT_cs <- load_cytoset_from_fcs(
 
 PT_gs <- GatingSet(PT_cs)
 
-if (length(unmixed_controls) == 0) {
-  warning(
-    "No FastPoisson control files found in: ",
-    unmixed_folder,
-    ". Control gating and control compensAID will be skipped."
-  )
-
-  controls_gs <- NULL
-} else {
-  controls_cs <- load_cytoset_from_fcs(
-    unmixed_controls,
-    truncate_max_range = FALSE,
-    transformation = FALSE
-  )
-
-  controls_gs <- GatingSet(controls_cs)
-}
 # Transform data
 ## PT_gs
 parameters <- colnames(PT_gs)
@@ -66,26 +43,6 @@ Biexponential <- flowjo_biexp_trans(
 BiexTransformList <- transformerList(flurophores_only, Biexponential)
 
 transform(PT_gs, BiexTransformList)
-
-## Controls_gs
-if (!is.null(controls_gs)) {
-  parameters <- colnames(controls_gs)
-  flurophores_only <- parameters[
-    !str_detect(parameters, "Time|FSC|SSC|Index")
-  ]
-
-  ### transformation
-  Biexponential <- flowjo_biexp_trans(
-    channelRange = 4096,
-    maxValue = 262144,
-    pos = 4.5,
-    neg = 0,
-    widthBasis = -500
-  )
-  BiexTransformList <- transformerList(flurophores_only, Biexponential)
-
-  transform(controls_gs, BiexTransformList)
-}
 
 # Clean
 source("R/get_gated_flowFrame.R")
@@ -134,8 +91,7 @@ clean_ffs <- map(PT_PeacoQC_results, "FinalFF")
 names(clean_ffs) <- names(PT_PeacoQC_results)
 
 PT_fs <- flowSet(frames = clean_ffs)
-PT_cs <- flowSet_to_cytoset(PT_fs)
-PT_gs <- GatingSet(PT_cs)
+PT_gs <- GatingSet(PT_fs)
 
 # Ungated NxN
 PT_ungated_nxn <- Utility_NbyNPlots(
@@ -145,15 +101,6 @@ PT_ungated_nxn <- Utility_NbyNPlots(
   ycolumn = "SSC-A",
   returntype = "patchwork"
 )
-if (!is.null(controls_gs)) {
-  controls_ungated_nxn <- Utility_NbyNPlots(
-    controls_gs,
-    sample.name = "TUBENAME",
-    outpath = output_folder,
-    ycolumn = "SSC-A",
-    returntype = "patchwork"
-  )
-}
 
 # Cleaup Gates
 gt_gating(Template, PT_gs)
@@ -166,6 +113,83 @@ PT_cleanup_GatingPlots <- Utility_GatingPlots(
   removestrings = ".fcs"
 )
 
+# NxN after gating
+PT_cleanup_nxn_GatingPlots <- Utility_NbyNPlots(
+  PT_gs,
+  sample.name = "TUBENAME",
+  gatesubset = "singlets",
+  ycolumn = "SSC-A"
+)
+
+
+# Save GatingSet
+GatingSetTimestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
+PT_gs_save_path <- file.path(
+  output_folder,
+  paste0("PT_GatingSet", "_", GatingSetTimestamp)
+)
+save_gs(PT_gs, path = PT_gs_save_path)
+
+
+# Controls
+## GatingSet
+unmixed_controls <- list.files(
+  path = unmixed_folder,
+  pattern = "FastPoisson\\.fcs$",
+  full.names = TRUE,
+  ignore.case = TRUE
+)
+
+if (length(unmixed_controls) == 0) {
+  warning(
+    "No FastPoisson control files found in: ",
+    unmixed_folder,
+    ". Control gating and control compensAID will be skipped."
+  )
+
+  controls_gs <- NULL
+} else {
+  controls_cs <- load_cytoset_from_fcs(
+    unmixed_controls,
+    truncate_max_range = FALSE,
+    transformation = FALSE
+  )
+
+  controls_gs <- GatingSet(controls_cs)
+}
+
+## Controls_gs
+if (!is.null(controls_gs)) {
+  parameters <- colnames(controls_gs)
+  flurophores_only <- parameters[
+    !str_detect(parameters, "Time|FSC|SSC|Index")
+  ]
+
+  ### transformation
+  Biexponential <- flowjo_biexp_trans(
+    channelRange = 4096,
+    maxValue = 262144,
+    pos = 4.5,
+    neg = 0,
+    widthBasis = -500
+  )
+  BiexTransformList <- transformerList(flurophores_only, Biexponential)
+
+  transform(controls_gs, BiexTransformList)
+}
+
+# Ungated NxN
+if (!is.null(controls_gs)) {
+  controls_ungated_nxn <- Utility_NbyNPlots(
+    controls_gs,
+    sample.name = "TUBENAME",
+    outpath = output_folder,
+    ycolumn = "SSC-A",
+    returntype = "patchwork"
+  )
+}
+
+# Gates
 if (!is.null(controls_gs)) {
   gt_gating(Template, controls_gs)
 
@@ -178,14 +202,7 @@ if (!is.null(controls_gs)) {
   )
 }
 
-
 # NxN after gating
-PT_cleanup_nxn_GatingPlots <- Utility_NbyNPlots(
-  PT_gs,
-  sample.name = "TUBENAME",
-  gatesubset = "singlets",
-  ycolumn = "SSC-A"
-)
 
 if (!is.null(controls_gs)) {
   controls_cleanup_nxn_GatingPlots <- Utility_NbyNPlots(
@@ -196,13 +213,7 @@ if (!is.null(controls_gs)) {
   )
 }
 
-# Save GatingSet
-GatingSetTimestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
-PT_gs_save_path <- file.path(
-  output_folder,
-  paste0("PT_GatingSet", "_", GatingSetTimestamp)
-)
-save_gs(PT_gs, path = PT_gs_save_path)
+# Save gatingset
 
 if (!is.null(controls_gs)) {
   controls_gs_save_path <- file.path(

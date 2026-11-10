@@ -1,3 +1,5 @@
+\[\]
+
 # Custom Flow Cytometry Analysis Pipeline
 
 This is a project to creates a semi-automated flow cytometry analysis pipeline for Caroline Stockwell. Stated goals for this script are:
@@ -78,7 +80,7 @@ The R files can all be found in [GitHub](https://github.com/A-hedgecock-Flowcore
 See Control File information here: [Control File- AutoSpectral](https://drcytometer.github.io/AutoSpectral/articles/02_Control_File_example.html) The main structural elements to the control file are the following columns. Note, we will be using the `get.spectra.automated()` function, so the "legacy" columns are not needed. Read more in linked article.
 
 | Column | Description |
-|------------------------|------------------------------------------------|
+|------------------------|-----------------------------------------------|
 | `filename` | The actual .fcs filename |
 | `fluorophore` | The name of the fluorophore (or AF/negative in case of the unstained) |
 | `marker` | The name of the marker (or left empty in the case of the unstained) |
@@ -143,7 +145,7 @@ AutoSpectral::check.control.file(
 The `AnalysisInfo/parameters.yml` file contains project-specific paths and settings, including the input folders, output folders, and AutoSpectral control-file name. Update this file if the project structure changes.
 
 | Parameter | Description |
-|-------------------------|----------------------------------------------|
+|--------------------------|----------------------------------------------|
 | `input_folder` | Folder name of the folder the files to run the pipeline on. Default is "Input". |
 | `output_folder` | Folder name of the folder to put all outputs of the pipeline into. Default is "Output". |
 | `single_color_controls_folder` | Folder name within the `input_folder` that contains the single color controls and unstained controls of the experiment. Default is "SCC" |

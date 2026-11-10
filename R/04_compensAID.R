@@ -40,7 +40,8 @@ PT_flowframes <- map(
       gating_set = PT_gs,
       sample_index = i,
       population = "singlets",
-      markers_only = TRUE
+      markers_only = TRUE,
+      inverse_transform = FALSE
     )
   }
 )

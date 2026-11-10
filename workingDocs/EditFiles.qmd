@@ -54,3 +54,16 @@ NxN_adjusted_gates <- Utility_NbyNPlots(
 
 NxN_adjusted_gates
 ```
+
+
+```{r}
+#| label: save gs again
+
+GatingSetTimestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
+PT_gs_save_path <- file.path(
+  output_folder,
+  paste0("PT_GatingSet", "_", GatingSetTimestamp)
+)
+save_gs(PT_gs, path = PT_gs_save_path)
+
+```
