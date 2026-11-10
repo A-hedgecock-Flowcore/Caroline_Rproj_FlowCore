@@ -148,6 +148,8 @@ nonpatient_samples <- All_samples[
   )
 ]
 
+unmixed_folder <- file.path(output_folder, analysis_parameters$unmixed_folder)
+
 CleanUpGatingTemplateFile <- list.files(
   path = analysisInfo_folder,
   pattern = analysis_parameters$gatingTemplate,

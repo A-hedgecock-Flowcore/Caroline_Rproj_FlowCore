@@ -70,7 +70,9 @@ transform(PT_gs, BiexTransformList)
 ## Controls_gs
 if (!is.null(controls_gs)) {
   parameters <- colnames(controls_gs)
-  flurophores_only <- parameters[!str_detect(parameters, "Time|FSC|SSC|Index")]
+  flurophores_only <- parameters[
+    !str_detect(parameters, "Time|FSC|SSC|Index")
+  ]
 
   ### transformation
   Biexponential <- flowjo_biexp_trans(
@@ -78,12 +80,50 @@ if (!is.null(controls_gs)) {
     maxValue = 262144,
     pos = 4.5,
     neg = 0,
-    widthBasis = -1000
+    widthBasis = -500
   )
   BiexTransformList <- transformerList(flurophores_only, Biexponential)
 
   transform(controls_gs, BiexTransformList)
 }
+
+# Clean
+source("R/get_gated_flowFrame.R")
+
+PT_flowframes <- map(
+  seq_along(PT_gs),
+  \(i) {
+    get_gated_flowFrame(
+      gating_set = PT_gs,
+      sample_index = i,
+      population = "root",
+      markers_only = FALSE
+    )
+  }
+)
+
+names(PT_flowframes) <- sampleNames(PT_gs)
+
+PT_PeacoQC_results <- purrr::imap(
+  PT_flowframes,
+  \(flow_frame, sample_name) {
+    PeacoQC::PeacoQC(
+      ff = flow_frame,
+      channels = flurophores_only,
+      determine_good_cells = "all",
+      plot = TRUE,
+      save_fcs = FALSE,
+      output_directory = output_folder
+    )
+  }
+)
+
+clean_ffs <- map(PT_PeacoQC_results, "FinalFF")
+names(clean_ffs) <- names(PT_PeacoQC_results)
+
+PT_fs <- flowSet(frames = clean_ffs)
+PT_cs <- flowSet_to_cytoset(PT_fs)
+PT_gs <- GatingSet(PT_cs)
 
 # Ungated NxN
 PT_ungated_nxn <- Utility_NbyNPlots(
@@ -149,7 +189,7 @@ PT_cleanup_nxn_GatingPlots <- Utility_NbyNPlots(
   PT_gs,
   sample.name = "TUBENAME",
   gatesubset = "singlets",
-  ycolumn = "SSC-A"
+  ycolumn = "PE-Cy7-A"
 )
 
 if (!is.null(controls_gs)) {
@@ -161,7 +201,7 @@ if (!is.null(controls_gs)) {
   )
 }
 
-# conditionally save plots
+# save plots
 qc_gating_plots_file <- file.path(
   output_folder,
   "qc_gating_plots.rds"

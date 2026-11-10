@@ -8,7 +8,7 @@
 #' @param sample_index Numeric index identifying the sample within
 #'   `gating_set`.
 #' @param population Character string specifying the population to extract.
-#'   Defaults to `"singletsSSC"`.
+#'   Defaults to `"signlets"`.
 #' @param inverse_transform Logical value indicating whether to apply the
 #'   inverse transformation when retrieving the data. Defaults to `FALSE`.
 #' @param markers_only Logical value indicating whether to retain only marker
@@ -32,7 +32,7 @@
 get_gated_flowFrame <- function(
   gating_set,
   sample_index,
-  population = "singletsSSC",
+  population = "singlets",
   inverse_transform = FALSE,
   markers_only = TRUE
 ) {
