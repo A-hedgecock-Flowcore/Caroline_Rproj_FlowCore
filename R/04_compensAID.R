@@ -9,7 +9,11 @@ source(file.path("R", "run_compensaid.R"))
 if (!exists("PT_gs", envir = .GlobalEnv)) {
   PT_gs_save_path <- file.path(
     output_folder,
-    "PT_GatingSet"
+    paste0(
+      "PT_GatingSet",
+      "_",
+      GatingSetTimestamp
+    )
   )
 
   PT_gs <- load_gs(PT_gs_save_path)
@@ -22,7 +26,11 @@ if (
 ) {
   controls_gs_save_path <- file.path(
     output_folder,
-    "controls_GatingSet"
+    paste0(
+      "controls_GatingSet",
+      "_",
+      GatingSetTimestamp
+    )
   )
 
   if (dir.exists(controls_gs_save_path)) {

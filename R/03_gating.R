@@ -171,7 +171,7 @@ if (!is.null(controls_gs)) {
     maxValue = 262144,
     pos = 4.5,
     neg = 0,
-    widthBasis = -500
+    widthBasis = -1000
   )
   BiexTransformList <- transformerList(flurophores_only, Biexponential)
 
