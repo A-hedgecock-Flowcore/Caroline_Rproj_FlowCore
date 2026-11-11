@@ -3,11 +3,542 @@ title: Clustiner and DimRedution Working Doc
 format: html
 ---
 
+```{r}
+library(FlowSOM)
+library(EmbedSOM)
+library(uwot)
+```
 
 ```{r}
+#| label: Load gatingSet
 gs_save_path <- file.path(
   output_folder,
-  "PT_GatingSet_20261109_223337"
+  "PT_GatingSet_20261109_223337" # change to something more durable later
 )
 PT_gs <- load_gs(gs_save_path)
+```
+
+
+```{r}
+#| label: Inspect gatingSet
+
+pData(PT_gs)
+markernames(PT_gs)
+gs_get_pop_paths(PT_gs, path = "auto")
+plot(PT_gs)
+```
+
+
+```{r}
+#| label: gated samples into a clenaed FlowSet
+
+cleaned_cs <- gs_pop_get_data(PT_gs, "singlets", inverse.transform = FALSE)
+class(cleaned_cs)
+cleaned_fs <- cytoset_to_flowSet(cleaned_cs)
+markernames(cleaned_fs)
+```
+
+
+```{r}
+#| label: Try with first sample
+
+ff <- cleaned_fs[[1]]
+cols_to_use <- colnames(ff)[
+  !str_detect(
+    string = colnames(ff),
+    pattern = "SSC|FSC|AF|Helix|Live Dead|PE-Cy7|Time|ID"
+  )
+]
+
+
+fSOM <- FlowSOM(
+  input = ff,
+  compensate = FALSE,
+  transform = FALSE,
+  colsToUse = cols_to_use,
+  nClus = 15,
+  seed = set.seed(36)
+)
+star <- PlotStars(
+  fsom = fSOM,
+  backgroundValues = fSOM$metaclustering
+)
+
+FlowSOMmary(fSOM)
+
+# try with FlowSet
+
+fSOM_flowset <- FlowSOM(
+  cleaned_fs,
+  compensate = FALSE,
+  transform = FALSE,
+  colsToUse = cols_to_use,
+  nClus = 15
+)
+
+FlowSOMmary(fSOM_flowset, plotFile = NULL)
+```
+
+
+```{r}
+#| label: EmbedSOM
+
+input_data <- fSOM_flowset$data
+
+embed_som <- EmbedSOM(
+  fsom = fSOM,
+  parallel = TRUE
+)
+
+PlotEmbed(embed_som)
+
+gqt_embed_som_map <- GQTSOM(input_data, parallel = T)
+embed_gqt <- EmbedSOM(input_data, map = gqt_embed_som_map, parallel = T)
+PlotEmbed(embed_gqt)
+```
+
+Let's try the `Spectre` [package](https://immunedynamics.io/Spectre/articles/simple_discovery.html)
+
+
+```{r}
+pak::pkg_install("immunedynamics/Spectre")
+library(Spectre)
+```
+
+
+```{r}
+#| label: demo set for spectre
+
+cell.dat <- Spectre::demo.clustered
+cell.dat <- cell.dat[, 1:19]
+cell.dat <- do.subsample(dat = cell.dat, targets = 10000)
+
+str(cell.dat)
+dim(cell.dat)
+
+# See col numbers
+as.matrix(names(cell.dat))
+
+cluster_cols <- names(cell.dat)[11:19] # all transformed cols
+as.matrix(cluster_cols)
+```
+
+
+```{r}
+#| label: clustering with Spectre
+
+cell.dat <- run.flowsom(
+  dat = cell.dat,
+  use.cols = cluster_cols,
+  xdim = 10,
+  ydim = 10,
+  max.meta = 20
+)
+
+glimpse(cell.dat) # check flowsom attached
+```
+
+
+```{r}
+#| label: UMAP with spectre
+
+cell.dat <- run.umap(
+  dat = cell.dat,
+  use.cols = cluster_cols
+)
+glimpse(cell.dat)
+```
+
+factor plot = UMAP as axis and FlowSOM metaclusters as color overlay
+
+```{r}
+#| label: lets visualize
+
+make.colour.plot(
+  dat = cell.dat,
+  x.axis = "UMAP_X",
+  y.axis = "UMAP_Y",
+  col.axis = "FlowSOM_metacluster",
+  col.type = "factor",
+  add.label = TRUE,
+  save.to.disk = FALSE
+)
+```
+
+
+```{r}
+#| label: function to write back to a csv and or fcs file
+
+withr::with_dir(
+  output_folder,
+  write.files(
+    dat = cell.dat,
+    file.prefix = "Spectre practice",
+    write.csv = TRUE,
+    write.fcs = TRUE
+  )
+)
+```
+
+back to plotting!!
+
+
+```{r}
+make.multi.plot(
+  dat = cell.dat,
+  x.axis = "UMAP_X",
+  y.axis = "UMAP_Y",
+  plot.by = cluster_cols,
+  path = output_folder
+)
+
+# Expression heatmap
+
+exp <- do.aggregate(cell.dat, cluster_cols, by = "FlowSOM_metacluster")
+make.pheatmap(
+  dat = exp,
+  sample.col = "FlowSOM_metacluster",
+  plot.cols = cluster_cols,
+  path = NULL
+)
+```
+
+At this point is a good time to annotate clusters... make a script for that?
+
+Using the example:
+
+```{r}
+annotate_spectre <- list(
+  "CD4 T Cells" = c(4),
+  "Neutrophils" = c(2),
+  "Microglia" = c(1),
+  "CD 8 T cells" = c(3),
+  "Infil Mactophages" = c(5)
+)
+annotate_spectre <- do.list.switch(annotate_spectre)
+names(annotate_spectre) <- c("Values", "Population")
+setorderv(annotate_spectre, "Values")
+
+annotate_spectre
+```
+
+add to the other data
+
+```{r}
+cell.dat <- do.add.cols(
+  cell.dat,
+  base.col = "FlowSOM_metacluster",
+  add.dat = annotate_spectre,
+  add.by = "Values"
+)
+
+glimpse(cell.dat)
+```
+
+LEt's view by the labels:
+
+```{r}
+make.colour.plot(
+  cell.dat,
+  "UMAP_X",
+  "UMAP_Y",
+  "Population",
+  col.type = 'factor',
+  add.label = TRUE,
+  path = output_folder
+)
+
+exp <- do.aggregate(cell.dat, cluster_cols, by = "Population")
+make.pheatmap(exp, "Population", cluster_cols, path = output_folder)
+```
+
+write annotated csv...
+
+## Data Example
+
+Cool now with our data..
+
+
+```{r}
+#| label: Load gatingSet and put cleaned data into a data.table
+gs_save_path <- file.path(
+  output_folder,
+  "PT_GatingSet_20261109_223337" # change to something more durable later
+)
+PT_gs <- load_gs(gs_save_path)
+
+
+pData(PT_gs)
+markernames(PT_gs)
+gs_get_pop_paths(PT_gs, path = "auto")
+
+cleaned_data <- gs_pop_get_data(PT_gs, "singlets", inverse.transform = FALSE)
+
+samples_names <- sampleNames(PT_gs) # Add RegEx PT extract IDs to pData in a scipt to make ID easier
+
+data_list <- map(samples_names, \(sample_id) {
+  pop_data <- exprs(cleaned_data[[sample_id]])
+  dt <- as.data.table(pop_data)
+  dt[, Sample := sample_id]
+  return(dt)
+})
+
+glimpse(data_list)
+
+data <- rbindlist(data_list, use.names = TRUE, fill = TRUE)
+
+as.matrix(names(data))
+```
+
+
+```{r}
+#| label: tidy and prepare variables
+
+marker_cols <- names(data)[11:27]
+sample_col <- names(data)[31]
+cluster_cols <- names(data)[c(11:22, 24, 25)] # no scatter, viability, DNA, or CD45
+```
+
+Great, now that's tidy let's get to work!
+
+
+```{r}
+#| label: flowsom
+
+Spectre_output_folder <- file.path(output_folder, "Spectre_outputs")
+dir.create(Spectre_output_folder)
+
+data <- run.flowsom(
+  dat = data,
+  use.cols = cluster_cols,
+  xdim = 10,
+  ydim = 10,
+  meta.k = 15
+)
+
+glimpse(data)
+```
+
+
+```{r}
+#| label: UMAP; with subsampled samples
+
+# subsample for DimRed
+## number of cells per sample
+data |> nrow()
+
+## lets make the sample a factor col
+data <- data |>
+  mutate(
+    Sample = as_factor(Sample)
+  )
+
+## groupby Sample
+data |>
+  group_by(Sample) |>
+  count()
+
+## let's downsample to an even amount per sample
+set.seed(12)
+data_subsample <- data |>
+  group_by(Sample) |>
+  slice_sample(n = 5000) |>
+  ungroup() |>
+  as.data.table()
+
+## let's check
+data_subsample |>
+  group_by(Sample) |>
+  count()
+
+data_subsample <- run.umap(
+  dat = data_subsample,
+  use.cols = cluster_cols,
+  umap.seed = 12
+)
+glimpse(data_subsample)
+```
+
+And visualize
+
+```{r}
+#| label: visualize
+
+make.colour.plot(
+  data_subsample,
+  "UMAP_X",
+  "UMAP_Y",
+  col.axis = "FlowSOM_metacluster",
+  col.type = "factor",
+  add.label = TRUE,
+  path = Spectre_output_folder
+)
+
+flowsom_clusters <- do.aggregate(data, cluster_cols, by = "FlowSOM_metacluster")
+make.pheatmap(
+  flowsom_clusters,
+  "FlowSOM_metacluster",
+  cluster_cols,
+  path = Spectre_output_folder
+)
+```
+
+should rename the colnames so its easier to read heatmap.
+# THIS EXAMPLE!
+
+```{r}
+#| label: Load gatingSet and put cleaned data into a data.table
+gs_save_path <- file.path(
+  output_folder,
+  "PT_GatingSet_20261109_223337" # change to something more durable later
+)
+PT_gs <- load_gs(gs_save_path)
+
+
+pData(PT_gs)
+markernames(PT_gs)
+gs_get_pop_paths(PT_gs, path = "auto")
+
+cleaned_data <- gs_pop_get_data(PT_gs, "singlets", inverse.transform = FALSE)
+
+samples_names <- sampleNames(PT_gs) # Add RegEx PT extract IDs to pData in a scipt to make ID easier
+
+data_list <- map(samples_names, \(sample_id) {
+  pop_data <- exprs(cleaned_data[[sample_id]])
+  dt <- as.data.table(pop_data)
+  dt[, Sample := sample_id]
+  return(dt)
+})
+
+glimpse(data_list)
+
+data <- rbindlist(data_list, use.names = TRUE, fill = TRUE)
+
+as.matrix(names(data))
+```
+
+```{r}
+markers <- markernames(PT_gs)
+fluorophores <- intersect(names(markers), names(data))
+
+data.table::setnames(
+  data,
+  old = fluorophores,
+  new = unname(markers[fluorophores])
+)
+
+names(data)
+```
+
+Let's rerun the analysis with these names:
+
+
+```{r}
+marker_cols <- names(data)[11:27]
+sample_col <- names(data)[31]
+cluster_cols <- names(data)[c(11:22, 24, 25)] # no scatter, viability, DNA, or CD45
+```
+
+
+```{r}
+Spectre_output_folder <- file.path(output_folder, "Spectre_outputs")
+dir.create(Spectre_output_folder)
+
+data <- run.flowsom(
+  dat = data,
+  use.cols = cluster_cols,
+  xdim = 10,
+  ydim = 10,
+  meta.k = 15,
+)
+glimpse(data)
+
+
+# subsample for DimRed
+## number of cells per sample
+data |> nrow()
+
+## lets make the sample a factor col
+data <- data |>
+  mutate(
+    Sample = as_factor(Sample)
+  )
+
+## groupby Sample
+data |>
+  group_by(Sample) |>
+  count()
+
+## let's downsample to an even amount per sample
+set.seed(12)
+data_subsample <- data |>
+  group_by(Sample) |>
+  slice_sample(n = 5000) |>
+  ungroup() |>
+  as.data.table()
+
+## let's check
+data_subsample |>
+  group_by(Sample) |>
+  count()
+
+data_subsample <- run.umap(
+  dat = data_subsample,
+  use.cols = cluster_cols,
+  umap.seed = 12
+)
+
+glimpse(data_subsample)
+```
+
+
+```{r}
+make.multi.plot(
+  data_subsample,
+  "UMAP_X",
+  "UMAP_Y",
+  plot.by = cluster_cols,
+  path = Spectre_output_folder
+)
+
+make.multi.plot(
+  dat = data_subsample,
+  "UMAP_X",
+  "UMAP_Y",
+  plot.by = "FlowSOM_metacluster",
+  divide.by = "Sample",
+  col.type = "factor",
+  path = Spectre_output_folder
+)
+
+make.colour.plot(
+  data_subsample,
+  "UMAP_X",
+  "UMAP_Y",
+  col.axis = "FlowSOM_metacluster",
+  col.type = "factor",
+  add.label = TRUE,
+  path = Spectre_output_folder
+)
+
+flowsom_clusters <- do.aggregate(data, cluster_cols, by = "FlowSOM_metacluster")
+make.pheatmap(
+  flowsom_clusters,
+  "FlowSOM_metacluster",
+  cluster_cols,
+  path = Spectre_output_folder
+)
+```
+
+Let's try ggplots
+
+
+```{r}
+p <- ggplot(
+  data_subsample,
+  aes(x = UMAP_X, y = UMAP_Y, color = FlowSOM_metacluster)
+) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~Sample)
+
 ```

@@ -8,7 +8,9 @@ required_packages <- c(
   "openCyto",
   "flowWorkspace",
   "flowGate",
-  "CompensAID"
+  "CompensAID",
+  "data.table",
+  "Spectre"
 )
 
 missing_packages <- required_packages[
@@ -36,6 +38,8 @@ library(openCyto)
 library(flowWorkspace)
 library(flowGate)
 library(CompensAID)
+library(data.table)
+library(Spectre)
 
 # file paths
 analysisInfo_folder <- file.path("AnalysisInfo")
