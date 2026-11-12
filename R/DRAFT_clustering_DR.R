@@ -223,3 +223,92 @@ ggsave(
   bg = "white",
   path = spectre_output_folder
 )
+
+cluster_events <- cleaned_data |>
+  group_by(FlowSOM_metacluster, Sample) |>
+  count()
+
+p <- ggplot(
+  cluster_events,
+  aes(x = FlowSOM_metacluster, y = n, fill = FlowSOM_metacluster)
+) +
+  geom_col() +
+  facet_wrap(~Sample) +
+  labs(
+    title = "Events per metacluster per patient",
+    x = "Metacluster",
+    y = "Number of Events",
+    fill = "Metacluster"
+  ) +
+  theme_minimal()
+
+ggsave(
+  "Events per metacluster per patient.png",
+  p,
+  path = spectre_output_folder
+)
+
+## UMAP display
+cluster_centers <- subsampled_cleaned_data |>
+  group_by(FlowSOM_metacluster) |>
+  dplyr::summarise(
+    UMAP_X = median(UMAP_X, na.rm = TRUE),
+    UMAP_Y = median(UMAP_Y, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+p <- ggplot(
+  subsampled_cleaned_data,
+  aes(UMAP_X, UMAP_Y, fill = FlowSOM_metacluster)
+) +
+  geom_hex(bins = 300) +
+  geom_label(
+    data = cluster_centers,
+    aes(
+      UMAP_X,
+      UMAP_Y,
+      label = FlowSOM_metacluster,
+      color = FlowSOM_metacluster
+    ),
+    inherit.aes = FALSE,
+    size = 3,
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    legend.position = "none"
+  ) +
+  labs(
+    title = "UMAP with FlowSOM overlays"
+  )
+
+
+ggsave("UMAP with FlowSOM overlay.png", p, path = spectre_output_folder)
+
+p <- p + facet_wrap(~Sample)
+
+ggsave("UMAP per patient.png", p, path = spectre_output_folder)
+
+markers <- subsampled_cleaned_data |>
+  pivot_longer(
+    cols = all_of(cluster_cols),
+    names_to = "Marker",
+    values_to = "Expression"
+  )
+
+p <- ggplot(markers, aes(UMAP_X, UMAP_Y)) +
+  stat_summary_hex(
+    aes(z = Expression, fill = after_stat(value)),
+    bins = 128,
+    fun = median
+  ) +
+  facet_wrap(~Marker) +
+  scale_fill_viridis_c(name = "Median Expression") +
+  theme_minimal() +
+  theme(
+    axis.title = element_blank(),
+    axis.text = element_blank()
+  ) +
+  labs(title = "Marker Expression")
+
+ggsave("UMAP Marker Expression.png", p, path = spectre_output_folder)
