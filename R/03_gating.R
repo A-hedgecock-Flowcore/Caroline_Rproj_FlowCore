@@ -45,7 +45,8 @@ BiexTransformList <- transformerList(flurophores_only, Biexponential)
 transform(PT_gs, BiexTransformList)
 
 # Clean
-source("R/get_gated_flowFrame.R")
+helper_function_folder <- file.path("R", "helper_functions")
+source(helper_function_folder, "get_gated_flowFrame.R")
 
 PT_flowframes <- map(
   seq_along(PT_gs),

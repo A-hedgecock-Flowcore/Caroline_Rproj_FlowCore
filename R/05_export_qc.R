@@ -22,7 +22,8 @@ purrr::walk(
 )
 
 # Helper functions
-source(file.path("R", "qc_export_helper.R"))
+helper_function_folder <- file.path("R", "helper_functions")
+source(file.path(helper_function_folder, "qc_export_helper.R"))
 
 # load objects if needed
 

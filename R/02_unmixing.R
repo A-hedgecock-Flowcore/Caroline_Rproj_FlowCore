@@ -35,10 +35,11 @@ existing_variant_RDS <- list.files(
 )
 
 # R helper functions
-source(file.path("R", "latest_af_file.R"))
-source(file.path("R", "spectra_extraction.R"))
-source(file.path("R", "extract_af_if_missing.R"))
-source(file.path("R", "unmix_match_af.R"))
+helper_function_folder <- file.path("R", "helper_functions")
+source(file.path(helper_function_folder, "latest_af_file.R"))
+source(file.path(helper_function_folder, "spectra_extraction.R"))
+source(file.path(helper_function_folder, "extract_af_if_missing.R"))
+source(file.path(helper_function_folder, "unmix_match_af.R"))
 
 # Validate control file
 if (!analysis_parameters$AutoSpectral_control_file_validated == TRUE) {

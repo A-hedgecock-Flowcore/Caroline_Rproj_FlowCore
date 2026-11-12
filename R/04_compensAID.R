@@ -2,8 +2,9 @@
 library(CompensAID)
 
 ## flowframe function and compensAID
-source(file.path("R", "get_gated_flowFrame.R"))
-source(file.path("R", "run_compensaid.R"))
+helper_function_folder <- file.path("R", "helper_functions")
+source(file.path(helper_function_folder, "get_gated_flowFrame.R"))
+source(file.path(helper_function_folder, "run_compensaid.R"))
 
 # Load patient GatingSet if needed
 if (!exists("PT_gs", envir = .GlobalEnv)) {
