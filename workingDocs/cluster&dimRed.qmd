@@ -501,16 +501,6 @@ make.multi.plot(
   path = Spectre_output_folder
 )
 
-make.multi.plot(
-  dat = data_subsample,
-  "UMAP_X",
-  "UMAP_Y",
-  plot.by = "FlowSOM_metacluster",
-  divide.by = "Sample",
-  col.type = "factor",
-  path = Spectre_output_folder
-)
-
 make.colour.plot(
   data_subsample,
   "UMAP_X",
@@ -530,15 +520,107 @@ make.pheatmap(
 )
 ```
 
-Let's try ggplots
+summary table
+
+```{r}
+markers <- data |>
+  pivot_longer(
+    cols = all_of(cluster_cols), # marker column names
+    names_to = "Marker",
+    values_to = "Expression"
+  )
+
+glimpse(markers)
+
+p <- ggplot(
+  data = markers,
+  aes(x = Expression, y = FlowSOM_metacluster, fill = FlowSOM_metacluster)
+) +
+  ggridges::geom_density_ridges(
+    scale = 0.9,
+    rel_min_height = 0.01,
+    alpha = 0.8,
+    color = "white",
+    linewidth = 0.2
+  ) +
+  facet_wrap(~Marker, scales = "free_x", ncol = 3) +
+  labs(
+    x = "Marker expression",
+    y = "Metacluster",
+    title = "Marker distribution by Metacluster"
+  ) +
+  ggridges::theme_ridges() +
+  theme(legend.position = "none")
+p
+
+ggsave(
+  "Marker distribution by metacluster.png",
+  plot = p,
+  path = Spectre_output_folder
+)
+```
 
 
 ```{r}
-p <- ggplot(
-  data_subsample,
-  aes(x = UMAP_X, y = UMAP_Y, color = FlowSOM_metacluster)
-) +
-  geom_point(alpha = 0.5) +
-  facet_wrap(~Sample)
+cluster_events <- data |>
+  group_by(FlowSOM_metacluster, Sample) |>
+  count()
 
+p <- ggplot(
+  cluster_events,
+  aes(x = FlowSOM_metacluster, y = n, fill = FlowSOM_metacluster)
+) +
+  geom_col() +
+  facet_wrap(~Sample) +
+  labs(
+    title = "Events per metacluster per patient",
+    x = "Metacluster",
+    y = "Number of Events",
+    fill = "Metacluster"
+  ) +
+  theme_minimal()
+
+ggsave(
+  "Events per metacluster per patient.png",
+  p,
+  path = Spectre_output_folder
+)
+```
+
+
+```{r}
+p <- ggplot(data_subsample, aes(UMAP_X, UMAP_Y, color = FlowSOM_metacluster)) +
+  geom_point(size = 0.5, alpha = 0.7) +
+  facet_wrap(~Sample) +
+  theme_minimal() +
+  labs(color = "Cluster")
+
+ggsave("Patient UMAPs.png", p, path = Spectre_output_folder)
+```
+
+
+```{r}
+markers <- data_subsample |>
+  pivot_longer(
+    cols = all_of(cluster_cols),
+    names_to = "Marker",
+    values_to = "Expression"
+  )
+
+p <- ggplot(markers, aes(UMAP_X, UMAP_Y)) +
+  stat_summary_hex(
+    aes(z = Expression, fill = after_stat(value)),
+    bins = 128,
+    fun = median
+  ) +
+  facet_wrap(~Marker) +
+  scale_fill_viridis_c(name = "Median Expression") +
+  theme_minimal() +
+  theme(
+    axis.title = element_blank(),
+    axis.text = element_blank()
+  ) +
+  labs(title = "Marker Expression")
+
+ggsave("UMAP Marker Expression.png", p, path = Spectre_output_folder)
 ```

@@ -3,10 +3,19 @@ title: WorkingDoc - manually edit gating
 format: html
 ---
 
-To interactively gate in R
+This document will walk you through manually adjusting gates if needed after the automatic clean up gates are applied.
+It is best to run the cells one at a time.
+
 ```{r}
 #| label: setup
 library(flowGate)
+output_folder_contents <- list.dirs(output_folder, full.names = TRUE, recursive = FALSE)
+PT_gatingSets <- output_folder_contents[str_detect(
+  output_folder_contents,
+  pattern = "PT_GatingSet"
+)]
+
+PT_gs <- load_gs(PT_gatingSets)
 ```
 
 ## flowGate
@@ -16,14 +25,16 @@ Adjust gates through gatingSet
 ```{r}
 #| label: view gates
 plot(PT_gs) # check gate names in gatingSet
+
+gate_to_be_adjusted <- "singlets" # change to gate to adjust. case sensitive.
 ```
 
 ```{r}
 #| label: Adjust gates in Shiny App
 gs_apply_gate_check(
   gs = PT_gs,
-  gate = "singlets", # change to gate to adjust. case sensitive.
-  AdjustAll = FALSE # set to TRUE if the changed gate should apply to all samples
+  gate = gate_to_be_adjusted,
+  AdjustAll = FALSE # set to TRUE if you want to new gate location to apply to all samples
 )
 ```
 
@@ -41,6 +52,7 @@ Adjusted_Gates <- Utility_GatingPlots(
 Adjusted_Gates
 ```
 
+If unhappy with placement or another gate needs to be adjusted, go back to the top. 
 
 ```{r}
 #| label: Check NxN 
@@ -62,7 +74,7 @@ NxN_adjusted_gates
 GatingSetTimestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
 PT_gs_save_path <- file.path(
   output_folder,
-  paste0("PT_GatingSet", "_", GatingSetTimestamp)
+  paste0("PT_GatingSet_Adjusted", "_", GatingSetTimestamp)
 )
 save_gs(PT_gs, path = PT_gs_save_path)
 
