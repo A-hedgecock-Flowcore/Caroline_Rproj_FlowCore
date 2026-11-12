@@ -173,7 +173,7 @@ p <- ggplot(
   labs(
     x = "Marker expression",
     y = "Metacluster",
-    title = "Marker distribution by Metacluster",
+    title = "Expression distribution by Metacluster",
     fill = "Cluster"
   ) +
   ggridges::theme_ridges() +
@@ -182,7 +182,7 @@ p <- ggplot(
   )
 
 ggsave(
-  "Marker expression by FlowSOM metacluster.png",
+  "Marker expression across metacluster.png",
   p,
   width = 10,
   height = 8,
@@ -216,7 +216,7 @@ p <- ggplot(
   )
 
 ggsave(
-  "Marker distribution within FlowSOM metacluster.png",
+  "Marker distribution per metacluster.png",
   p,
   width = 10,
   height = 8,
@@ -245,6 +245,27 @@ p <- ggplot(
 ggsave(
   "Events per metacluster per patient.png",
   p,
+  width = 15,
+  path = spectre_output_folder
+)
+
+p <- ggplot(
+  cluster_events,
+  aes(x = FlowSOM_metacluster, y = n, fill = FlowSOM_metacluster)
+) +
+  geom_col() +
+  labs(
+    title = "Events per metacluster",
+    x = "Metacluster",
+    y = "Number of Events",
+    fill = "Metacluster"
+  ) +
+  theme_minimal()
+
+ggsave(
+  "Events per metacluster.png",
+  p,
+  width = 10,
   path = spectre_output_folder
 )
 
@@ -259,7 +280,7 @@ cluster_centers <- subsampled_cleaned_data |>
 
 p <- ggplot(
   subsampled_cleaned_data,
-  aes(UMAP_X, UMAP_Y, fill = FlowSOM_metacluster)
+  aes(UMAP_X, UMAP_Y, color = FlowSOM_metacluster)
 ) +
   geom_hex(bins = 300) +
   geom_label(
@@ -299,7 +320,7 @@ markers <- subsampled_cleaned_data |>
 p <- ggplot(markers, aes(UMAP_X, UMAP_Y)) +
   stat_summary_hex(
     aes(z = Expression, fill = after_stat(value)),
-    bins = 128,
+    bins = 300,
     fun = median
   ) +
   facet_wrap(~Marker) +
@@ -312,3 +333,24 @@ p <- ggplot(markers, aes(UMAP_X, UMAP_Y)) +
   labs(title = "Marker Expression")
 
 ggsave("UMAP Marker Expression.png", p, path = spectre_output_folder)
+
+# Summary Tables
+
+cell_counts <- cleaned_data |>
+  group_by(Sample) |>
+  count() |>
+  as.data.table()
+
+table <- create.sumtable(
+  dat = cleaned_data,
+  sample.col = sample_col,
+  pop.col = "FlowSOM_metacluster",
+  use.cols = cluster_cols,
+  counts = cell_counts
+)
+
+write_csv(
+  table,
+  file = file.path(spectre_output_folder, "Summary Table.csv"),
+  col_names = TRUE
+)

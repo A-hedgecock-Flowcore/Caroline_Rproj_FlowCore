@@ -143,25 +143,6 @@ function qcCarouselMove(carouselId, direction) {
 message("QC report setup: checking required packages")
 flush.console()
 
-required_report_packages <- c(
-  "dplyr",
-  "readr",
-  "tibble",
-  "purrr",
-  "knitr",
-  "fs",
-  "htmltools"
-)
-
-missing_report_packages <- required_report_packages[
-  !vapply(
-    required_report_packages,
-    requireNamespace,
-    quietly = TRUE,
-    FUN.VALUE = logical(1)
-  )
-]
-
 library(dplyr)
 library(readr)
 library(tibble)
