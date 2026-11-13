@@ -140,9 +140,6 @@ function qcCarouselMove(carouselId, direction) {
 
 # Required packages
 
-message("QC report setup: checking required packages")
-flush.console()
-
 library(dplyr)
 library(readr)
 library(tibble)
@@ -150,14 +147,6 @@ library(purrr)
 library(knitr)
 library(fs)
 library(htmltools)
-
-if (length(missing_report_packages) > 0) {
-  stop(
-    "Missing packages required to render the QC report: ",
-    paste(missing_report_packages, collapse = ", ")
-  )
-}
-
 
 # Project and output paths
 

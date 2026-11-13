@@ -135,6 +135,7 @@ subsampled_cleaned_data <- run.umap(
   umap.seed = 42
 )
 
+
 # Visualizations
 ## heatmap of clusters
 flowsom_clusters <- do.aggregate(
@@ -173,7 +174,7 @@ p <- ggplot(
   labs(
     x = "Marker expression",
     y = "Metacluster",
-    title = "Expression distribution by Metacluster",
+    title = "Expression distribution by Antigen",
     fill = "Cluster"
   ) +
   ggridges::theme_ridges() +
@@ -182,7 +183,7 @@ p <- ggplot(
   )
 
 ggsave(
-  "Marker expression across metacluster.png",
+  "Antigen expression across metacluster.png",
   p,
   width = 10,
   height = 8,
@@ -204,9 +205,9 @@ p <- ggplot(
   ) +
   facet_wrap(~FlowSOM_metacluster, scales = "free_x", ncol = 5) +
   labs(
-    x = "Marker expression",
+    x = "Expression",
     y = "Antigen",
-    title = "Marker distribution within Metacluster",
+    title = "Marker distribution per Metacluster",
     fill = "Antigen"
   ) +
   ggridges::theme_ridges() +
@@ -304,11 +305,15 @@ p <- ggplot(
   )
 
 
-ggsave("UMAP with FlowSOM overlay.png", p, path = spectre_output_folder)
+ggsave(
+  "UMAP with FlowSOM overlay.png",
+  p,
+  path = spectre_output_folder
+)
 
 p <- p + facet_wrap(~Sample)
 
-ggsave("UMAP per patient.png", p, path = spectre_output_folder)
+ggsave("UMAP per patient.png", p, width = 10, path = spectre_output_folder)
 
 markers <- subsampled_cleaned_data |>
   pivot_longer(
@@ -332,7 +337,12 @@ p <- ggplot(markers, aes(UMAP_X, UMAP_Y)) +
   ) +
   labs(title = "Marker Expression")
 
-ggsave("UMAP Marker Expression.png", p, path = spectre_output_folder)
+ggsave(
+  "UMAP Marker Expression.png",
+  p,
+  width = 10,
+  path = spectre_output_folder
+)
 
 # Summary Tables
 
@@ -353,4 +363,27 @@ write_csv(
   table,
   file = file.path(spectre_output_folder, "Summary Table.csv"),
   col_names = TRUE
+)
+
+write_csv(
+  subsampled_cleaned_data,
+  file = file.path(spectre_output_folder, "subsampled_UMAP.csv"),
+  col_names = TRUE
+)
+
+write_csv(
+  cleaned_data,
+  file = file.path(spectre_output_folder, "all_cells_noUMAP.csv"),
+  col_names = TRUE
+)
+
+withr::with_dir(
+  spectre_output_folder,
+  write.files(
+    cleaned_data,
+    "Metacluster",
+    divide.by = sample_col,
+    write.csv = FALSE,
+    write.fcs = TRUE
+  )
 )

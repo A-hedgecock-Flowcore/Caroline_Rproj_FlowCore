@@ -1,0 +1,156 @@
+---
+title: Analysis Report
+subtitle: Review of FlowSOM clustering and UMAP to identify populations
+date: last-modified
+toc: true
+number-sections: true
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-location: left
+    code-fold: true
+    code-tools: true
+    embed-resources: false
+    self-contained: false
+execute:
+  echo: false
+  warning: false
+  message: false
+  error: true
+---
+
+```{r}
+#| label: setup
+
+library(tidyverse)
+
+project_root <- getwd()
+
+analysisInfo_folder <- file.path("AnalysisInfo")
+parameters_file <- list.files(
+  analysisInfo_folder,
+  "\\.yml$",
+  full.names = TRUE,
+  ignore.case = TRUE
+)
+analysis_parameters <- yaml::read_yaml(parameters_file)
+output_folder <- file.path(project_root, analysis_parameters$output_folder)
+spectre_output_folder <- file.path(output_folder, "Spectre_outputs")
+
+if (!fs::is_absolute_path(output_folder)) {
+  output_folder <- file.path(
+    project_root,
+    output_folder
+  )
+}
+
+if (!dir.exists(output_folder)) {
+  stop(
+    "Output folder does not exist: ",
+    output_folder,
+    " \n QCPipeline.R and AnalysisPipeline.R may not have run yet."
+  )
+}
+
+# output files
+analysis_outputs <- list.files(spectre_output_folder, full.names = TRUE)
+
+csv_files <- analysis_outputs[str_detect(analysis_outputs, "\\.csv$")]
+image_files <- analysis_outputs[str_detect(analysis_outputs, "\\.png$")]
+```
+
+# Overall summary
+```{r}
+#| label: n-metaclusters
+
+cleaned_data <- read_csv(csv_files[str_detect(csv_files, "all")])
+n_metaclusters <- n_distinct(cleaned_data$FlowSOM_metacluster, na.rm = TRUE)
+n_samples <- n_distinct(cleaned_data$Sample, na.rm = TRUE)
+```
+
+```{r}
+#| label: summary-table
+
+summary_table <- read_csv(csv_files[str_detect(csv_files, "Summary")])
+
+# Convert the per-cluster percentage columns from wide to long format
+cluster_percentages <- summary_table |>
+  pivot_longer(
+    cols = matches("^Percent of sample -- \\d+$"),
+    names_to = "Cluster",
+    names_pattern = "^Percent of sample -- (\\d+)$",
+    values_to = "Percent"
+  ) |>
+  mutate(
+    Cluster = paste("Metacluster", Cluster),
+    Percent = as.numeric(Percent)
+  )
+
+# Keep the top clusters for each sample
+top_clusters_number <- analysis_parameters$number_metaclusters_rep
+
+top_clusters <- cluster_percentages |>
+  group_by(Sample) |>
+  slice_max(order_by = Percent, n = top_clusters_number, with_ties = FALSE) |>
+  arrange(desc(Percent), .by_group = TRUE) |>
+  summarise(
+    `Top represented clusters` = paste(
+      sprintf("%s (%.1f%%)", Cluster, Percent),
+      collapse = "; "
+    ),
+    .groups = "drop"
+  )
+
+# Count cells in the cleaned population, then make the overview table
+overview_table <- cleaned_data |>
+  count(Sample, name = "Cells per sample, cleaned") |>
+  left_join(top_clusters, by = "Sample")
+
+```
+
+This run **`r n_metaclusters` FlowSOM metaclusters** were created from **`r n_samples` Patient Samples.**
+
+Below, the number of cells analyzed per sample and the top **`r top_clusters_number`** clusters can be observed:
+
+```{r}
+#| label: overview-summay-table
+
+knitr::kable(
+  overview_table,
+  caption = "Total cells and top represented clusters per sample"
+)
+```
+
+```{r}
+#| label: fig-evts-per-MC-image
+#| fig-cap: "Events per Metacluster per Patient"
+
+evts_per_MC <- image_files[str_detect(
+  image_files,
+  "Events per metacluster per patient"
+)]
+
+knitr::include_graphics(evts_per_MC)
+```
+
+```{r}
+#| label: fig-UMAP-custer-overlay
+#| fig-cap: "UMAP with FlowSOM Metacluster overlay"
+
+UMAP_overlay <- image_files[str_detect(image_files, "overlay")]
+
+knitr::include_graphics(UMAP_overlay)
+```
+
+# Identify Metaclusters
+
+- Expression Heatmap
+- Expression pattern UMAP
+- Expression pattern ridgeline per metacluster
+- events per metacluster (to help determine what is "junk")
+
+# Metacluster Representation in Patients
+
+- UMAP per patient
+- events per metacluster per patient

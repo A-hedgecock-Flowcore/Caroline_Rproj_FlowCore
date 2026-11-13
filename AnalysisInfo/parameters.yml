@@ -11,3 +11,5 @@ patient_unstained_pattern: "^PT[0-9]+.*unstained.*\\.fcs$"
 gatingTemplate: "gatingTemplate.csv"
 AutoSpectral_control_file_name: "fcs_control_file"
 AutoSpectral_control_file_validated: TRUE  
+
+number_metaclusters_rep: 3
