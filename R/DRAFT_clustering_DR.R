@@ -36,6 +36,7 @@ if (!dir.exists(analysis_outputs)) {
 spectre_output_folder <- file.path(output_folder, "Spectre_outputs")
 dir.create(spectre_output_folder)
 
+num_of_clusters <- analysis_parameters$metacluster
 # choose latest gatingSet and load
 output_folder_contents <- list.dirs(
   output_folder,
@@ -103,7 +104,8 @@ cleaned_data <- run.flowsom(
   use.cols = cluster_cols,
   xdim = 10,
   ydim = 10,
-  meta.k = 15,
+  meta.k = num_of_clusters,
+  max.meta = 15,
   verbose = FALSE
 )
 
@@ -383,6 +385,35 @@ withr::with_dir(
     cleaned_data,
     "Metacluster",
     divide.by = sample_col,
+    write.csv = FALSE,
+    write.fcs = TRUE
+  )
+)
+
+withr::with_dir(
+  spectre_output_folder,
+  write.files(
+    cleaned_data,
+    "Metacluster",
+    write.csv = FALSE,
+    write.fcs = TRUE
+  )
+)
+withr::with_dir(
+  spectre_output_folder,
+  write.files(
+    subsampled_cleaned_data,
+    "UMAP",
+    divide.by = sample_col,
+    write.csv = FALSE,
+    write.fcs = TRUE
+  )
+)
+withr::with_dir(
+  spectre_output_folder,
+  write.files(
+    subsampled_cleaned_data,
+    "UMAP",
     write.csv = FALSE,
     write.fcs = TRUE
   )

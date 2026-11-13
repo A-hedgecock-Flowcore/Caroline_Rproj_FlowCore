@@ -1,3 +1,34 @@
+# Check required packages are available
+required_packages <- c(
+  "tidyverse",
+  "yaml",
+  "AutoSpectral",
+  "AutoSpectralRcpp",
+  "Luciernaga",
+  "openCyto",
+  "flowWorkspace",
+  "flowGate",
+  "CompensAID",
+  "data.table",
+  "Spectre"
+)
+
+missing_packages <- required_packages[
+  !vapply(
+    required_packages,
+    requireNamespace,
+    quietly = TRUE,
+    FUN.VALUE = logical(1)
+  )
+]
+
+if (length(missing_packages) > 0) {
+  stop(
+    "Missing required packages. Run renv::restore(). Missing packages: ",
+    paste(missing_packages, collapse = ", ")
+  )
+}
+
 # load necessary packages
 library(tidyverse)
 library(AutoSpectral)

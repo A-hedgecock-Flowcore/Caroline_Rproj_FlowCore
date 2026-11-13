@@ -12,4 +12,5 @@ gatingTemplate: "gatingTemplate.csv"
 AutoSpectral_control_file_name: "fcs_control_file"
 AutoSpectral_control_file_validated: TRUE  
 
-number_metaclusters_rep: 3
+metacluster_num: "15"
+top_number_metaclusters_rep: 3
