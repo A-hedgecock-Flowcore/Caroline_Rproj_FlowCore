@@ -80,7 +80,7 @@ The R files can all be found in [GitHub](https://github.com/A-hedgecock-Flowcore
 See Control File information here: [Control File- AutoSpectral](https://drcytometer.github.io/AutoSpectral/articles/02_Control_File_example.html) The main structural elements to the control file are the following columns. Note, we will be using the `get.spectra.automated()` function, so the "legacy" columns are not needed. Read more in linked article.
 
 | Column | Description |
-|--------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|----------------|-------------------------------------------------------|
 | `filename` | The actual .fcs filename |
 | `fluorophore` | The name of the fluorophore (or AF/negative in case of the unstained) |
 | `marker` | The name of the marker (or left empty in the case of the unstained) |

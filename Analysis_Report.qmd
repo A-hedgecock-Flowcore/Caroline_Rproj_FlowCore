@@ -88,7 +88,7 @@ cluster_percentages <- summary_table |>
   )
 
 # Keep the top clusters for each sample
-top_clusters_number <- analysis_parameters$number_metaclusters_rep
+top_clusters_number <- analysis_parameters$top_number_metaclusters_rep
 
 top_clusters <- cluster_percentages |>
   group_by(Sample) |>
@@ -122,6 +122,9 @@ knitr::kable(
 )
 ```
 
+## Representation of events per metacluster
+This may help determine if the samplers were "overclustered" resulting in clusters with very low number of cells that may not be relevant. 
+
 ```{r}
 #| label: fig-evts-per-MC-image
 #| fig-cap: "Events per Metacluster per Patient"
@@ -134,6 +137,7 @@ evts_per_MC <- image_files[str_detect(
 knitr::include_graphics(evts_per_MC)
 ```
 
+## UMAP with Metaclusters
 ```{r}
 #| label: fig-UMAP-custer-overlay
 #| fig-cap: "UMAP with FlowSOM Metacluster overlay"
@@ -144,13 +148,40 @@ knitr::include_graphics(UMAP_overlay)
 ```
 
 # Identify Metaclusters
+The images below are to help identify and eventually annotate the clusters. 
 
-- Expression Heatmap
-- Expression pattern UMAP
-- Expression pattern ridgeline per metacluster
-- events per metacluster (to help determine what is "junk")
+
+```{r}
+#| label: fig-exp-heatmap
+#| fig-cap: "Expression Heatmap of Antigens against Metaclusters"
+
+exp_heatmap <- image_files[str_detect(image_files, "Heatmap")]
+
+knitr::include_graphics(exp_heatmap)
+```
+
+```{r}
+#| label: fig-ridgeline-MC
+#| fig-cap: "Antigen Expression per Metacluster"
+
+ridgeline_antigen_exp <- image_files[str_detect(image_files, "Marker distribution per metacluster")]
+
+knitr::include_graphics(ridgeline_antigen_exp)
+```
+
+```{r}
+#| label: fig-exp-UMAP
+#| fig-cap: "UMAP with Antigen Expression Overlaid"
+
+UMAP_exp <- image_files[str_detect(image_files, "UMAP Marker Expression")]
+
+knitr::include_graphics(UMAP_exp)
+```
+
 
 # Metacluster Representation in Patients
+
+Let's visualize the clusters on patients
 
 - UMAP per patient
 - events per metacluster per patient

@@ -335,14 +335,14 @@ p <- ggplot(markers, aes(UMAP_X, UMAP_Y)) +
   theme_minimal() +
   theme(
     axis.title = element_blank(),
-    axis.text = element_blank()
+    axis.text = element_blank(),
+    plot.title = element_text(size = rel(1.5))
   ) +
   labs(title = "Marker Expression")
 
 ggsave(
   "UMAP Marker Expression.png",
   p,
-  width = 10,
   path = spectre_output_folder
 )
 
