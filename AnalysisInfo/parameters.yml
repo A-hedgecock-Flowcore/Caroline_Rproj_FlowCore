@@ -14,3 +14,5 @@ AutoSpectral_control_file_validated: TRUE
 
 metacluster_num: 15
 top_number_metaclusters_rep: 3
+
+publish_to_gh: TRUE

@@ -1,14 +1,20 @@
 project:
   type: website
+  render: 
+    - Analysis_Report.qmd
+    - QCReport.qmd
+    - QCDashboard.qmd
 
 website:
-  title: "Quality Control Reports"
+  title: "Analysis Pipeline"
   navbar:
     left:
       - href: QCReport.qmd
         text: QC Report
       - href: QCDashboard.qmd
         text: QC Dashboard
+      - href: Analysis_Report.qmd
+        text: Clustering and Analysis Report
 
 format:
   html:

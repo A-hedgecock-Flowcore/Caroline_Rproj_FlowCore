@@ -364,13 +364,15 @@ if (!dashboard_result) {
   stop("Pipeline stopped because the QC dashboard failed to render.")
 }
 
-publish_status <- system2(
-  command = quarto::quarto_path(),
-  args = c(
-    "publish",
-    "gh-pages",
-    "--no-render",
-    "--no-prompt",
-    "--no-browser"
+if (analysis_parameters$publish_to_gh) {
+  publish_status <- system2(
+    command = quarto::quarto_path(),
+    args = c(
+      "publish",
+      "gh-pages",
+      "--no-render",
+      "--no-prompt",
+      "--no-browser"
+    )
   )
-)
+}

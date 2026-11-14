@@ -1,9 +1,12 @@
 ---
-title: "Quality Control Reports"
+title: "Analysis Pipeline"
 ---
 
-Quality-control reporting. 
+# Quality-control reporting.
 See more information at [Github site](https://github.com/A-hedgecock-Flowcore/Caroline_Rproj_FlowCore/tree/main)
 
 - [View the QC Report](QCReport.qmd)
 - [View the QC Dashboard](QCDashboard.qmd)
+
+# Analysis Results
+- [View Analysis Report](Analysis_Report.qmd)

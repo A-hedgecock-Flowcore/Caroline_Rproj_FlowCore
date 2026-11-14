@@ -14,7 +14,6 @@ format:
     code-fold: true
     code-tools: true
     embed-resources: false
-    self-contained: false
 execute:
   echo: false
   warning: false

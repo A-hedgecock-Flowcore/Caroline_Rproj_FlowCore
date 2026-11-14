@@ -27,7 +27,7 @@ if (length(parameters_file) != 1) {
 
 analysis_parameters <- yaml::read_yaml(parameters_file)
 
-output_folder <- file.path("Output")
+output_folder <- file.path(analysis_parameters$output_folder)
 
 spectre_output_folder <- file.path(output_folder, "Spectre_outputs")
 dir.create(spectre_output_folder)
@@ -429,3 +429,36 @@ withr::with_dir(
     write.fcs = TRUE
   )
 )
+
+analysis_result <- tryCatch(
+  {
+    quarto::quarto_render(
+      input = "Analysis_Report.qmd",
+      output_format = "all"
+    )
+
+    message("Analysis Report rendered successfully.")
+    TRUE
+  },
+  error = function(e) {
+    message("Analysis Report rendering failed: ", e$message)
+    FALSE
+  }
+)
+
+if (!analysis_result) {
+  stop("Publishing stopped because the Analysis Report failed to render.")
+}
+
+if (analysis_parameters$publish_to_gh) {
+  publish_status <- system2(
+    command = quarto::quarto_path(),
+    args = c(
+      "publish",
+      "gh-pages",
+      "--no-render",
+      "--no-prompt",
+      "--no-browser"
+    )
+  )
+}

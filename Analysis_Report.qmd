@@ -13,6 +13,8 @@ format:
     code-tools: true
     embed-resources: false
     self-contained: false
+  pdf: 
+    toc: true
 execute:
   echo: false
   warning: false
@@ -37,13 +39,6 @@ parameters_file <- list.files(
 analysis_parameters <- yaml::read_yaml(parameters_file)
 output_folder <- file.path(project_root, analysis_parameters$output_folder)
 spectre_output_folder <- file.path(output_folder, "Spectre_outputs")
-
-if (!fs::is_absolute_path(output_folder)) {
-  output_folder <- file.path(
-    project_root,
-    output_folder
-  )
-}
 
 if (!dir.exists(output_folder)) {
   stop(
@@ -128,6 +123,8 @@ This may help determine if the samplers were "overclustered" resulting in cluste
 ```{r}
 #| label: fig-evts-per-MC-image
 #| fig-cap: "Events per Metacluster"
+#| out-width: 100%
+#| column: page
 
 evts_per_MC <- image_files[str_detect(
   image_files,
@@ -137,10 +134,11 @@ evts_per_MC <- image_files[str_detect(
 knitr::include_graphics(evts_per_MC)
 ```
 
-## UMAP with Metaclusters
 ```{r}
-#| label: fig-UMAP-custer-overlay
+#| label: fig-UMAP-cluster-overlay
 #| fig-cap: "UMAP with FlowSOM Metacluster overlay"
+#| out-width: 100%
+#| column: page
 
 UMAP_overlay <- image_files[str_detect(image_files, "overlay")]
 
@@ -163,6 +161,8 @@ knitr::include_graphics(exp_heatmap)
 ```{r}
 #| label: fig-ridgeline-MC
 #| fig-cap: "Antigen Expression per Metacluster"
+#| out-width: 100%
+#| column: page
 
 ridgeline_antigen_exp <- image_files[str_detect(
   image_files,
@@ -175,6 +175,8 @@ knitr::include_graphics(ridgeline_antigen_exp)
 ```{r}
 #| label: fig-exp-UMAP
 #| fig-cap: "UMAP with Antigen Expression Overlaid"
+#| out-width: 100%
+#| column: page
 
 UMAP_exp <- image_files[str_detect(image_files, "UMAP Marker Expression")]
 
@@ -190,6 +192,8 @@ Let's visualize the clusters on patients
 ```{r}
 #| label: UMAP-per-patient
 #| fig-cap: "UMAP per patient"
+#| out-width: 100%
+#| column: page
 
 PT_UMAP <- image_files[str_detect(image_files, "UMAP per patient")]
 
@@ -200,6 +204,8 @@ knitr::include_graphics(PT_UMAP)
 ```{r}
 #| label: fig-evts-per-MC-PT
 #| fig-cap: "Events per Metacluster per patient"
+#| out-width: 100%
+#| column: page
 
 PT_evts_per_MC <- image_files[str_detect(
   image_files,
@@ -209,4 +215,3 @@ PT_evts_per_MC <- image_files[str_detect(
 knitr::include_graphics(PT_evts_per_MC)
 ```
 
-- events per metacluster per patient
