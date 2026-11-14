@@ -96,5 +96,33 @@
     "title": "Quality Control Reports",
     "section": "",
     "text": "Quality-control reporting. See more information at Github site\n\nView the QC Report\nView the QC Dashboard"
+  },
+  {
+    "objectID": "workingDocs/Analysis_Report.html",
+    "href": "workingDocs/Analysis_Report.html",
+    "title": "Analysis Report",
+    "section": "",
+    "text": "Error in `file()`:\n! invalid 'description' argument\n\n\nError:\n! object 'analysis_parameters' not found\n\n\nError:\n! object 'output_folder' not found\n\n\nError:\n! object 'output_folder' not found\n\n\nError in `dir.exists()`:\n! unused argument (output_folder)\n\n\nError:\n! object 'spectre_output_folder' not found\n\n\nError:\n! object 'analysis_outputs' not found\n\n\nError:\n! object 'analysis_outputs' not found\n\n\n\n1 Overall summary\n\nUMAP with cluster overlay\nsummary table\n\n\n\nError:\n! object 'csv_files' not found\n\n\nError:\n! object 'cleaned_data' not found\n\n\nError:\n! object 'cleaned_data' not found\n\n\n\n\nError:\n! object 'image_files' not found\n\n\nThis run, {r}n_metaclusters FlowSOM metaclusters were created from {r}n_samples Patient Samples.\n\n\n2 Identify Metaclusters\n\nExpression Heatmap\nExpression pattern UMAP\nExpression pattern ridgeline per metacluster\nevents per metacluster (to help determine what is “junk”)\n\n\n\n3 Metacluster Representation in Patients\n\nUMAP per patient\nevents per metacluster per patient"
+  },
+  {
+    "objectID": "Analysis_Report.html",
+    "href": "Analysis_Report.html",
+    "title": "Analysis Report",
+    "section": "",
+    "text": "This run 15 FlowSOM metaclusters were created from 5 Patient Samples.\nBelow, the number of cells analyzed per sample and the top 3 clusters can be observed:\n\n\n\nTotal cells and top represented clusters per sample\n\n\n\n\n\n\n\nSample\nCells per sample, cleaned\nTop represented clusters\n\n\n\n\n11 PT169 immune panel\n21658\nMetacluster 8 (77.4%); Metacluster 6 (8.0%); Metacluster 3 (5.8%)\n\n\n13 PT170 immune panel\n22620\nMetacluster 4 (51.2%); Metacluster 3 (17.9%); Metacluster 6 (15.3%)\n\n\n15 PT171 immune panel\n10031\nMetacluster 12 (36.6%); Metacluster 4 (36.2%); Metacluster 6 (11.7%)\n\n\n17 PT172 immune panel\n12938\nMetacluster 8 (55.9%); Metacluster 12 (14.3%); Metacluster 6 (11.2%)\n\n\n9 PT160 immune panel\n19040\nMetacluster 3 (24.8%); Metacluster 6 (16.3%); Metacluster 4 (13.3%)\n\n\n\n\n\n\n\nThis may help determine if the samplers were “overclustered” resulting in clusters with very low number of cells that may not be relevant.\n\n\n\n\n\n\n\n\nFigure 1: Events per Metacluster\n\n\n\n\n\n\n\n\n\n\n\n\n\nFigure 2: UMAP with FlowSOM Metacluster overlay"
+  },
+  {
+    "objectID": "Analysis_Report.html#representation-of-events-per-metacluster",
+    "href": "Analysis_Report.html#representation-of-events-per-metacluster",
+    "title": "Analysis Report",
+    "section": "",
+    "text": "This may help determine if the samplers were “overclustered” resulting in clusters with very low number of cells that may not be relevant.\n\n\n\n\n\n\n\n\nFigure 1: Events per Metacluster\n\n\n\n\n\n\n\n\n\n\n\n\n\nFigure 2: UMAP with FlowSOM Metacluster overlay"
+  },
+  {
+    "objectID": "Analysis_Report.html#umap-with-metaclusters",
+    "href": "Analysis_Report.html#umap-with-metaclusters",
+    "title": "Analysis Report",
+    "section": "",
+    "text": "Figure 2: UMAP with FlowSOM Metacluster overlay"
   }
 ]
