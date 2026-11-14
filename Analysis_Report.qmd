@@ -127,11 +127,11 @@ This may help determine if the samplers were "overclustered" resulting in cluste
 
 ```{r}
 #| label: fig-evts-per-MC-image
-#| fig-cap: "Events per Metacluster per Patient"
+#| fig-cap: "Events per Metacluster"
 
 evts_per_MC <- image_files[str_detect(
   image_files,
-  "Events per metacluster per patient"
+  "Events per metacluster\\.png$"
 )]
 
 knitr::include_graphics(evts_per_MC)
@@ -164,7 +164,10 @@ knitr::include_graphics(exp_heatmap)
 #| label: fig-ridgeline-MC
 #| fig-cap: "Antigen Expression per Metacluster"
 
-ridgeline_antigen_exp <- image_files[str_detect(image_files, "Marker distribution per metacluster")]
+ridgeline_antigen_exp <- image_files[str_detect(
+  image_files,
+  "Marker distribution per metacluster"
+)]
 
 knitr::include_graphics(ridgeline_antigen_exp)
 ```
@@ -183,5 +186,27 @@ knitr::include_graphics(UMAP_exp)
 
 Let's visualize the clusters on patients
 
-- UMAP per patient
+
+```{r}
+#| label: UMAP-per-patient
+#| fig-cap: "UMAP per patient"
+
+PT_UMAP <- image_files[str_detect(image_files, "UMAP per patient")]
+
+knitr::include_graphics(PT_UMAP)
+```
+
+
+```{r}
+#| label: fig-evts-per-MC-PT
+#| fig-cap: "Events per Metacluster per patient"
+
+PT_evts_per_MC <- image_files[str_detect(
+  image_files,
+  "Events per metacluster per patient\\.png$"
+)]
+
+knitr::include_graphics(PT_evts_per_MC)
+```
+
 - events per metacluster per patient

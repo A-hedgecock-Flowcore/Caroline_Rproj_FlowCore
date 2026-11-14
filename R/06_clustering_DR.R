@@ -1,4 +1,4 @@
-# Clustering and Dimenstion Reduction steps after QC of data has been verified
+# Clustering and Dimesion Reduction steps after QC of data has been verified
 
 # Setup
 library(flowWorkspace)
@@ -28,33 +28,44 @@ if (length(parameters_file) != 1) {
 analysis_parameters <- yaml::read_yaml(parameters_file)
 
 output_folder <- file.path("Output")
-analysis_outputs <- file.path(output_folder, "analysis_outputs")
-if (!dir.exists(analysis_outputs)) {
-  dir.create(analysis_outputs)
-}
 
 spectre_output_folder <- file.path(output_folder, "Spectre_outputs")
 dir.create(spectre_output_folder)
 
 num_of_clusters <- analysis_parameters$metacluster
+
 # choose latest gatingSet and load
 output_folder_contents <- list.dirs(
   output_folder,
   full.names = TRUE,
   recursive = FALSE
 )
+
 PT_gatingSets <- output_folder_contents[str_detect(
   output_folder_contents,
   pattern = "PT_GatingSet"
 )]
 
-if (length(PT_gatingSets) > 1) {
-  PT_gs_path <- sort(PT_gatingSets)[length(PT_gatingSets)]
-  cli::cli_alert_success(paste0("Using GatingSet ", basename(PT_gs_path)))
-} else {
-  PT_gs_path <- PT_gatingSets
+if (length(PT_gatingSets) == 0) {
+  stop(
+    "No Patient gatingSets found in ",
+    output_folder,
+    "."
+  )
 }
 
+gs_timestamps <- str_match(
+  basename(PT_gatingSets),
+  "^PT_GatingSet(_Adjusted)?_(\\d{8}_\\d{6})$"
+)[, 3]
+
+latest_timestamp <- sort(gs_timestamps, decreasing = TRUE)
+
+PT_gs_path <- PT_gatingSets[1]
+
+cli::cli_alert_success(
+  paste0("Using GatingSet ", basename(PT_gs_path))
+)
 PT_gs <- load_gs(PT_gs_path)
 
 # Transfer gs to a data.table
@@ -102,10 +113,10 @@ cluster_cols <- names(cleaned_data)[
 cleaned_data <- run.flowsom(
   dat = cleaned_data,
   use.cols = cluster_cols,
-  xdim = 10,
-  ydim = 10,
+  xdim = 14,
+  ydim = 14,
   meta.k = num_of_clusters,
-  max.meta = 15,
+  max.meta = 20,
   verbose = FALSE
 )
 
@@ -181,7 +192,7 @@ p <- ggplot(
   ) +
   ggridges::theme_ridges() +
   theme(
-    axis.text = element_blank(),
+    axis.text = element_blank()
   )
 
 ggsave(
@@ -295,7 +306,7 @@ p <- ggplot(
       color = FlowSOM_metacluster
     ),
     inherit.aes = FALSE,
-    size = 3,
+    size = 3
   ) +
   theme_minimal() +
   theme(
