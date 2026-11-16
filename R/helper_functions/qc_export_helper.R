@@ -93,8 +93,6 @@ save_qc_plot <- function(
           }
         },
         error = function(print_error) {
-          grDevices::dev.off()
-
           stop(
             "Could not save QC plot. ggsave error: ",
             conditionMessage(ggsave_error),

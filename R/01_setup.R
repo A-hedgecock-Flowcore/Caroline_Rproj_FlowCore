@@ -1,34 +1,3 @@
-# Check required packages are available
-required_packages <- c(
-  "tidyverse",
-  "yaml",
-  "AutoSpectral",
-  "AutoSpectralRcpp",
-  "Luciernaga",
-  "openCyto",
-  "flowWorkspace",
-  "flowGate",
-  "CompensAID",
-  "data.table",
-  "Spectre"
-)
-
-missing_packages <- required_packages[
-  !vapply(
-    required_packages,
-    requireNamespace,
-    quietly = TRUE,
-    FUN.VALUE = logical(1)
-  )
-]
-
-if (length(missing_packages) > 0) {
-  stop(
-    "Missing required packages. Run renv::restore(). Missing packages: ",
-    paste(missing_packages, collapse = ", ")
-  )
-}
-
 # load necessary packages
 library(tidyverse)
 library(AutoSpectral)
@@ -67,7 +36,7 @@ analysis_parameters <- yaml::read_yaml(parameters_file)
 if (dir.exists(file.path(analysis_parameters$input_folder))) {
   input_folder <- file.path(analysis_parameters$input_folder)
 } else {
-  stop("Need to create the ", analysisInfo_folder$input_folder, " folder.")
+  stop("Need to create the ", analysis_parameters$input_folder, " folder.")
 }
 
 if (

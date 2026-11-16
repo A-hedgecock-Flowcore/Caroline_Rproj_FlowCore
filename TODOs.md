@@ -5,3 +5,4 @@
  [x]   - separate after QC script is verified
 
 [] annotating clusters dynamically?
+[] should controls be processes the same? (LiveDead only and PBMC + U251 control)

@@ -12,8 +12,10 @@
 #' The function depends on the following objects being available in its
 #' calling environment:
 #' \describe{
-#'   \item{af_matches}{A data frame or tibble containing `patient_id` and
-#'   `af_file` columns.}
+#'   \item{af_matches}{A data frame or tibble containing `patient_id`,
+#'   `af_file`, `af_status`, and `af_reason` columns. `af_status` indicates
+#'   whether the AF spectra are available; `af_reason` describes why they are
+#'   unavailable, if applicable.}
 #'   \item{table_spectra_folder}{Directory containing AF spectra files.}
 #'   \item{spectra}{The AutoSpectral reference spectra.}
 #'   \item{asp}{An AutoSpectral parameter object.}

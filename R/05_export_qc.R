@@ -213,21 +213,22 @@ dir.create(
 export_compensaid_qc <- function(
   results,
   image_folder,
-  summary_file
+  summary_file,
+  unavailable_status = "Results unavailable"
 ) {
   if (is.null(results) || length(results) == 0) {
-    empty_summary <- tibble::tibble(
-      sample = character(),
-      flagged_pairs = integer(),
-      review_status = character()
+    unavailabe_summary <- tibble::tibble(
+      sample = NA_character_,
+      flagged_pairs = NA_integer_,
+      review_status = unavailable_status
     )
 
     readr::write_csv(
-      empty_summary,
+      unavailable_summary,
       summary_file
     )
 
-    return(invisible(empty_summary))
+    return(invisible(unavailabe_summary))
   }
 
   summary_rows <- purrr::imap_dfr(
@@ -331,8 +332,18 @@ tryCatch(
       summary_file = file.path(
         compensaid_table_folder,
         "patient_compensaid_summary.csv"
-      )
+      ),
+      unavailable_status = "Patient compensAID results unavailable"
     )
+
+    controls_unavailable_status <- if (
+      exists("controls_gs", inherits = TRUE) &&
+        is.null(controls_gs)
+    ) {
+      "No control samples available"
+    } else {
+      "Control compensAID results unavailable"
+    }
 
     controls_compensaid_summary <- export_compensaid_qc(
       results = controls_compensaid_results,
@@ -340,7 +351,8 @@ tryCatch(
       summary_file = file.path(
         compensaid_table_folder,
         "controls_compensaid_summary.csv"
-      )
+      ),
+      unavailable_status = controls_unavailable_status
     )
   },
   error = function(e) {

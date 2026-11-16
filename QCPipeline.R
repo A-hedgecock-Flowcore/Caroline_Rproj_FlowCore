@@ -307,7 +307,7 @@ message(
 
 message(
   "Pipeline duration: ",
-  round(as.numeric(pipeline_summary$duration_minutes[[1]], 0)),
+  round(as.numeric(pipeline_summary$duration_minutes[[1]]), 0),
   " minutes"
 )
 

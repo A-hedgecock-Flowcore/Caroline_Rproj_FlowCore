@@ -46,7 +46,7 @@ transform(PT_gs, BiexTransformList)
 
 # Clean
 helper_function_folder <- file.path("R", "helper_functions")
-source(helper_function_folder, "get_gated_flowFrame.R")
+source(file.path(helper_function_folder, "get_gated_flowFrame.R"))
 
 PT_flowframes <- map(
   seq_along(PT_gs),

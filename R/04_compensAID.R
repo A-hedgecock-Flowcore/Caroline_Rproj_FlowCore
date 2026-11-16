@@ -78,7 +78,8 @@ if (!is.null(controls_gs)) {
         gating_set = controls_gs,
         sample_index = i,
         population = "singlets",
-        markers_only = TRUE
+        markers_only = TRUE,
+        inverse.transform = FALSE
       )
     }
   )

@@ -10,7 +10,7 @@
 #' @param ssi_threshold Numeric threshold used to identify flagged channel
 #'   pairs. Defaults to `-1`.
 #' @param print_plots Logical value indicating whether flagged-pair plots
-#'   should be printed immediately. Defaults to `TRUE`.
+#'   should be printed immediately. Defaults to `FALSE`.
 #'
 #' @return A list containing:
 #' \describe{
