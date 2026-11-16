@@ -1,7 +1,6 @@
 ---
 title: "QC Report"
 subtitle: "Automated Pipeline: AutoSpectral, gating, and compensAID review"
-author: "Ayrianna Hedgecock, UNC Flow Cytometry Core Facility"
 date: last-modified
 toc: true
 toc-depth: 3
@@ -14,6 +13,12 @@ format:
     code-fold: true
     code-tools: true
     embed-resources: false
+  pdf: 
+    documentclass: scrartcl
+    papersize: letter
+    geometry: 
+      - margin=0.75in
+    colorlinks: true
 execute:
   echo: false
   warning: false
@@ -410,7 +415,6 @@ summary_value <- function(data, column, default = "Unavailable") {
 }
 
 # Status-summary helpers
-
 count_status <- function(data, status) {
   if (
     is.null(data) ||
@@ -420,10 +424,7 @@ count_status <- function(data, status) {
     return(0L)
   }
 
-  sum(
-    data$status == status,
-    na.rm = TRUE
-  )
+  sum(data$status == status, na.rm = TRUE)
 }
 
 has_compensaid_flags <- function(data) {
@@ -439,12 +440,75 @@ has_compensaid_flags <- function(data) {
     as.numeric(data$flagged_pairs)
   )
 
-  any(
-    flagged_pairs > 0,
-    na.rm = TRUE
-  )
+  any(flagged_pairs > 0, na.rm = TRUE)
 }
 
+compensaid_summary_state <- function(data) {
+  if (
+    is.null(data) ||
+      nrow(data) == 0 ||
+      !"flagged_pairs" %in% names(data)
+  ) {
+    return("unavailable")
+  }
+
+  flagged_pairs <- suppressWarnings(
+    as.numeric(data$flagged_pairs)
+  )
+
+  available <- !is.na(flagged_pairs)
+
+  if (!any(available)) {
+    review_status <- if ("review_status" %in% names(data)) {
+      as.character(data$review_status)
+    } else {
+      character()
+    }
+
+    if (
+      any(
+        grepl(
+          "^No control samples available$",
+          review_status,
+          ignore.case = TRUE
+        ),
+        na.rm = TRUE
+      )
+    ) {
+      return("not_applicable")
+    }
+
+    return("unavailable")
+  }
+
+  if (any(flagged_pairs[available] > 0)) {
+    if (any(!available)) {
+      return("review_partial")
+    }
+
+    return("review")
+  }
+
+  if (any(!available)) {
+    return("partial")
+  }
+
+  "clear"
+}
+
+compensaid_report_status <- function(data) {
+  state <- compensaid_summary_state(data)
+
+  switch(
+    state,
+    clear = "✅ No flagged pairs",
+    review = "⚠️ Review",
+    review_partial = "⚠️ Review; some results unavailable",
+    partial = "⚠️ Some results unavailable",
+    not_applicable = "Not applicable",
+    unavailable = "Unavailable"
+  )
+}
 
 # HTML carousel helper
 
@@ -454,6 +518,10 @@ make_image_carousel <- function(
   title = NULL,
   image_height = "32rem"
 ) {
+  if (!knitr::is_html_output()) {
+    return(htmltools::HTML(""))
+  }
+
   image_files <- image_files[
     file.exists(image_files)
   ]
@@ -564,6 +632,41 @@ make_image_carousel <- function(
 
 message("QC report setup: completed")
 flush.console()
+
+
+# PDF image helper
+static_image_gallery <- function(files, section) {
+  files <- files[file.exists(files)]
+
+  if (length(files) == 0) {
+    return(paste0("*No ", section, " images found.*"))
+  }
+
+  relative_paths <- fs::path_rel(
+    normalizePath(files, winslash = "/", mustWork = TRUE),
+    start = project_root
+  )
+
+  relative_paths <- gsub("\\\\", "/", relative_paths)
+
+  # Encode spaces and special URL characters while preserving path separators.
+  image_sources <- utils::URLencode(relative_paths, reserved = TRUE)
+  image_sources <- gsub("%2F", "/", image_sources, ignore.case = TRUE)
+
+  captions <- tools::file_path_sans_ext(basename(files))
+  captions <- trimws(gsub("[^[:alnum:]]+", " ", captions))
+  captions <- paste(section, captions, sep = ": ")
+
+  image_lines <- paste0(
+    "![",
+    captions,
+    "](<",
+    image_sources,
+    ">){width=95%}"
+  )
+
+  paste(image_lines, collapse = "\n\n")
+}
 ```
 
 # Executive summary
@@ -577,37 +680,6 @@ pipeline_status <- summary_value(
   default = NA_character_
 )
 
-generated_image_count <- sum(
-  c(
-    length(variant_images),
-    length(autofluorescence_images),
-    length(scatter_images),
-    length(similarity_images),
-    length(spectra_images),
-    length(clean_control_images),
-    length(patient_gating_images),
-    length(controls_gating_images),
-    length(patient_compensaid_images),
-    length(controls_compensaid_images)
-  )
-)
-
-loaded_table_count <- sum(
-  !vapply(
-    list(
-      pipeline_summary,
-      af_status,
-      patient_unmixing_status,
-      nonpatient_unmixing_status,
-      patient_compensaid_summary,
-      controls_compensaid_summary,
-      qc_export_status
-    ),
-    is.null,
-    FUN.VALUE = logical(1)
-  )
-)
-
 if (is.na(pipeline_status)) {
   cat(
     "⚠️ Pipeline summary was not found. ",
@@ -615,25 +687,11 @@ if (is.na(pipeline_status)) {
   )
 } else if (identical(pipeline_status, "completed")) {
   cat(
-    "✅ The analysis pipeline completed successfully. ",
-    "Found ",
-    generated_image_count,
-    " diagnostic image(s) and ",
-    loaded_table_count,
-    " summary/status table(s).",
-    sep = ""
+    "✅ The analysis pipeline completed successfully."
   )
 } else {
   cat(
-    "❌ The analysis pipeline did not complete successfully. ",
-    "Recorded status: ",
-    pipeline_status,
-    ". Found ",
-    generated_image_count,
-    " diagnostic image(s) and ",
-    loaded_table_count,
-    " summary/status table(s).",
-    sep = ""
+    "❌ The analysis pipeline did not complete successfully. "
   )
 }
 ```
@@ -728,7 +786,7 @@ status_summary <- tibble::tibble(
     } else if (count_status(nonpatient_unmixing_status, "failed") > 0) {
       "⚠️ Review"
     } else {
-      "✅ No failures"
+      "✅ No flags"
     },
 
     if (
@@ -740,27 +798,8 @@ status_summary <- tibble::tibble(
       "✅ Results available"
     },
 
-    if (
-      is.null(patient_compensaid_summary) &&
-        length(patient_compensaid_images) == 0
-    ) {
-      "Unavailable"
-    } else if (has_compensaid_flags(patient_compensaid_summary)) {
-      "⚠️ Review"
-    } else {
-      "✅ No flagged pairs"
-    },
-
-    if (
-      is.null(controls_compensaid_summary) &&
-        length(controls_compensaid_images) == 0
-    ) {
-      "Unavailable"
-    } else if (has_compensaid_flags(controls_compensaid_summary)) {
-      "⚠️ Review"
-    } else {
-      "✅ No flagged pairs"
-    }
+    compensaid_report_status(patient_compensaid_summary),
+    compensaid_report_status(controls_compensaid_summary)
   )
 )
 
@@ -799,6 +838,7 @@ if (
 }
 ```
 
+:::{.content-hidden when-format="pdf"}
 # Input and output inventory
 
 ```{r}
@@ -1063,6 +1103,8 @@ cat(
 )
 ```
 
+:::
+
 # Gating QC
 
 ```{r}
@@ -1163,6 +1205,18 @@ if (length(patient_gating_images) == 0) {
 }
 ```
 
+
+```{r}
+#| label: pdf-gating-images-patient
+#| results: asis
+
+if (knitr::is_latex_output()) {
+  if (length(patient_gating_images) > 0) {
+    cat(static_image_gallery(patient_gating_images, "Patient gating"))
+  }
+}
+```
+
 ## Control gating plots
 
 ```{r}
@@ -1237,6 +1291,17 @@ if (length(controls_gating_images) == 0) {
 }
 ```
 
+```{r}
+#| label: pdf-gating-images-control
+#| results: asis
+
+if (knitr::is_latex_output()) {
+  if (length(controls_gating_images) > 0) {
+    cat(static_image_gallery(controls_gating_images, "Controls gating"))
+  }
+}
+```
+
 # compensAID QC
 
 ## Patient summary
@@ -1262,6 +1327,7 @@ if (
   knitr::kable(patient_compensaid_summary)
 }
 ```
+
 
 ## Patient flagged pairs
 
@@ -1290,29 +1356,23 @@ if (length(patient_compensaid_matrix_images) == 0) {
   )
 }
 
-patient_compensaid_pair_images <- patient_compensaid_images[
-  grepl(
-    "_pair_",
-    basename(patient_compensaid_images),
-    ignore.case = TRUE
-  )
-]
+patient_compensaid_state <- compensaid_summary_state(
+  patient_compensaid_summary
+)
 
-if (is.null(patient_compensaid_summary)) {
-  cat(
-    "Patient compensAID summary is unavailable."
-  )
-} else if (!has_compensaid_flags(patient_compensaid_summary)) {
+if (patient_compensaid_state == "unavailable") {
+  cat("Patient compensAID results are unavailable.")
+} else if (patient_compensaid_state == "not_applicable") {
+  cat("Patient compensAID results are not applicable.")
+} else if (patient_compensaid_state == "clear") {
   cat("✅ No patient samples contain flagged SSI pairs.")
 } else if (length(patient_compensaid_pair_images) == 0) {
   cat(
-    "⚠️ Patient samples contain flagged SSI pairs, but no pair-review images ",
-    "were found."
+    "⚠️ Review is needed, but no flagged-pair diagnostic images were found."
   )
 } else {
   cat(
-    "⚠️ Patient samples contain flagged SSI pairs. ",
-    "Review the diagnostic pair plots below.\n\n"
+    "⚠️ Review the patient compensAID flagged-pair diagnostics below.\n\n"
   )
 
   cat(
@@ -1323,6 +1383,21 @@ if (is.null(patient_compensaid_summary)) {
       image_height = "32rem"
     )
   )
+}
+```
+
+
+```{r}
+#| label: pdf-compensaid-images-patient
+#| results: asis
+
+if (knitr::is_latex_output()) {
+  if (length(patient_compensaid_images) > 0) {
+    cat(static_image_gallery(
+      patient_compensaid_images,
+      "Patient compensAID images"
+    ))
+  }
 }
 ```
 
@@ -1413,3 +1488,16 @@ if (is.null(controls_compensaid_summary)) {
 }
 ```
 
+```{r}
+#| label: pdf-compensaid-images-control
+#| results: asis
+
+if (knitr::is_latex_output()) {
+  if (length(controls_compensaid_images) > 0) {
+    cat(static_image_gallery(
+      controls_compensaid_images,
+      "Controls compensAID images"
+    ))
+  }
+}
+```
