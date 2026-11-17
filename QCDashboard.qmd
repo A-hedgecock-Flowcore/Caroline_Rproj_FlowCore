@@ -1,6 +1,5 @@
 ---
 title: "QC Dashboard: AutoSpectral, gating, and compensAID review"
-author: "Ayrianna Hedgecock, UNC Flow Cytometry Core Facility"
 date: last-modified
 format: 
   dashboard:
@@ -1196,15 +1195,13 @@ run_details <- tibble::tibble(
     "Pipeline status",
     "Start time",
     "End time",
-    "Duration (minutes)",
-    "Output folder"
+    "Duration (minutes)"
   ),
   Value = c(
     pipeline_status,
     start_time,
     end_time,
-    duration_minutes,
-    output_folder
+    duration_minutes
   )
 )
 
@@ -1317,6 +1314,8 @@ if (length(review_tables) == 0) {
   }
 }
 ```
+
+:::{.content-hidden unless-format="pdf" }
 
 # Autofluorescence Review
 ## AF Extraction Review
@@ -1533,7 +1532,7 @@ cat(
 )
 ```
 
-
+:::
 
 
 # Automated Gating Review
