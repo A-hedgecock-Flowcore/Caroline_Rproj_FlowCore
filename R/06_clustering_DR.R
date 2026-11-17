@@ -1,4 +1,4 @@
-# Clustering and Dimesion Reduction steps after QC of data has been verified
+# Clustering and Dimenstion Reduction steps after QC of data has been verified
 
 # Setup
 library(flowWorkspace)
@@ -30,9 +30,9 @@ analysis_parameters <- yaml::read_yaml(parameters_file)
 output_folder <- file.path(analysis_parameters$output_folder)
 
 spectre_output_folder <- file.path(output_folder, "Spectre_outputs")
-dir.create(spectre_output_folder)
+dir.create(spectre_output_folder, recursive = TRUE, showWarnings = FALSE)
 
-num_of_clusters <- analysis_parameters$metacluster
+num_of_clusters <- analysis_parameters$metacluster_num
 
 # choose latest gatingSet and load
 output_folder_contents <- list.dirs(
@@ -61,7 +61,14 @@ gs_timestamps <- str_match(
 
 latest_timestamp <- sort(gs_timestamps, decreasing = TRUE)
 
-PT_gs_path <- PT_gatingSets[1]
+if (is.null(analysis_parameters$gatingSet)) {
+  PT_gs_path <- PT_gatingSets[str_detect(PT_gatingSets, latest_timestamp[1])]
+} else {
+  PT_gs_path <- PT_gatingSets[str_detect(
+    PT_gatingSets,
+    analysis_parameters$gatingSet
+  )]
+}
 
 cli::cli_alert_success(
   paste0("Using GatingSet ", basename(PT_gs_path))
@@ -121,12 +128,6 @@ cleaned_data <- run.flowsom(
 )
 
 # subsample data.table for dimRed
-## Cells per sample
-cleaned_data |>
-  mutate(Sample = as_factor(Sample)) |>
-  group_by(Sample) |>
-  count()
-
 ## downsample to 10K cells per sample
 set.seed(12) # reproducibility
 subsampled_cleaned_data <- cleaned_data |>
@@ -135,11 +136,6 @@ subsampled_cleaned_data <- cleaned_data |>
   ungroup() |>
   as.data.table()
 
-## check subsampling
-subsampled_cleaned_data |>
-  mutate(Sample = as_factor(Sample)) |>
-  group_by(Sample) |>
-  count()
 
 # Run UMAP
 subsampled_cleaned_data <- run.umap(
@@ -375,19 +371,19 @@ table <- create.sumtable(
 write_csv(
   table,
   file = file.path(spectre_output_folder, "Summary Table.csv"),
-  col_names = TRUE
+  col_names = FALSE
 )
 
 write_csv(
   subsampled_cleaned_data,
   file = file.path(spectre_output_folder, "subsampled_UMAP.csv"),
-  col_names = TRUE
+  col_names = FALSE
 )
 
 write_csv(
   cleaned_data,
   file = file.path(spectre_output_folder, "all_cells_noUMAP.csv"),
-  col_names = TRUE
+  col_names = FALSE
 )
 
 withr::with_dir(

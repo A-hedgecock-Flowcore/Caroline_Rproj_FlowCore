@@ -49,25 +49,71 @@ if (!dir.exists(output_folder)) {
 }
 
 # output files
-analysis_outputs <- list.files(spectre_output_folder, full.names = TRUE)
+clustered_data_csv <- file.path(
+  spectre_output_folder,
+  "all_cells_noUMAP.csv"
+)
 
-csv_files <- analysis_outputs[str_detect(analysis_outputs, "\\.csv$")]
-image_files <- analysis_outputs[str_detect(analysis_outputs, "\\.png$")]
+summary_table_file <- file.path(
+  spectre_output_folder,
+  "Summary Table.csv"
+)
+
+clustered_data <- read_csv(
+  clustered_data_csv,
+  show_col_types = FALSE
+)
+
+summary_table <- read_csv(
+  summary_table_file,
+  show_col_types = FALSE
+)
+
+heatmap_png <- file.path(
+  spectre_output_folder,
+  "Heatmap by FlowSOM metaclusters.png"
+)
+
+marker_exp_MC_png <- file.path(
+  spectre_output_folder,
+  "Marker distribution per metacluster.png"
+)
+
+evts_MC_png <- file.path(
+  spectre_output_folder,
+  "Events per metacluster.png"
+)
+
+evts_MC_PT_png <- file.path(
+  spectre_output_folder,
+  "Events per metacluster per patient.png"
+)
+
+UMAP_marker_exp_png <- file.path(
+  spectre_output_folder,
+  "UMAP Marker Expression.png"
+)
+
+UMAP_PT_png <- file.path(
+  spectre_output_folder,
+  "UMAP per patient.png"
+)
+
+UMAP_overlay_png <- file.path(
+  spectre_output_folder,
+  "UMAP with FlowSOM overlay.png"
+)
 ```
 
 # Overall summary
 ```{r}
 #| label: n-metaclusters
-
-cleaned_data <- read_csv(csv_files[str_detect(csv_files, "all")])
-n_metaclusters <- n_distinct(cleaned_data$FlowSOM_metacluster, na.rm = TRUE)
-n_samples <- n_distinct(cleaned_data$Sample, na.rm = TRUE)
+n_metaclusters <- n_distinct(clustered_data$FlowSOM_metacluster, na.rm = TRUE)
+n_samples <- n_distinct(clustered_data$Sample, na.rm = TRUE)
 ```
 
 ```{r}
 #| label: summary-table
-
-summary_table <- read_csv(csv_files[str_detect(csv_files, "Summary")])
 
 # Convert the per-cluster percentage columns from wide to long format
 cluster_percentages <- summary_table |>
@@ -98,7 +144,7 @@ top_clusters <- cluster_percentages |>
   )
 
 # Count cells in the cleaned population, then make the overview table
-overview_table <- cleaned_data |>
+overview_table <- clustered_data |>
   count(Sample, name = "Cells per sample, cleaned") |>
   left_join(top_clusters, by = "Sample")
 
@@ -109,7 +155,7 @@ This run **`r n_metaclusters` FlowSOM metaclusters** were created from **`r n_sa
 Below, the number of cells analyzed per sample and the top **`r top_clusters_number`** clusters can be observed:
 
 ```{r}
-#| label: overview-summay-table
+#| label: overview-summary-table
 
 knitr::kable(
   overview_table,
@@ -118,7 +164,7 @@ knitr::kable(
 ```
 
 ## Representation of events per metacluster
-This may help determine if the samplers were "overclustered" resulting in clusters with very low number of cells that may not be relevant. 
+This may help determine if the samples were "overclustered" resulting in clusters with very low number of cells that may not be relevant. 
 
 ```{r}
 #| label: fig-evts-per-MC-image
@@ -126,12 +172,7 @@ This may help determine if the samplers were "overclustered" resulting in cluste
 #| out-width: 100%
 #| column: page
 
-evts_per_MC <- image_files[str_detect(
-  image_files,
-  "Events per metacluster\\.png$"
-)]
-
-knitr::include_graphics(evts_per_MC)
+knitr::include_graphics(evts_MC_png)
 ```
 
 ```{r}
@@ -140,9 +181,7 @@ knitr::include_graphics(evts_per_MC)
 #| out-width: 100%
 #| column: page
 
-UMAP_overlay <- image_files[str_detect(image_files, "overlay")]
-
-knitr::include_graphics(UMAP_overlay)
+knitr::include_graphics(UMAP_overlay_png)
 ```
 
 # Identify Metaclusters
@@ -153,9 +192,7 @@ The images below are to help identify and eventually annotate the clusters.
 #| label: fig-exp-heatmap
 #| fig-cap: "Expression Heatmap of Antigens against Metaclusters"
 
-exp_heatmap <- image_files[str_detect(image_files, "Heatmap")]
-
-knitr::include_graphics(exp_heatmap)
+knitr::include_graphics(heatmap_png)
 ```
 
 ```{r}
@@ -164,12 +201,7 @@ knitr::include_graphics(exp_heatmap)
 #| out-width: 100%
 #| column: page
 
-ridgeline_antigen_exp <- image_files[str_detect(
-  image_files,
-  "Marker distribution per metacluster"
-)]
-
-knitr::include_graphics(ridgeline_antigen_exp)
+knitr::include_graphics(marker_exp_MC_png)
 ```
 
 ```{r}
@@ -178,9 +210,7 @@ knitr::include_graphics(ridgeline_antigen_exp)
 #| out-width: 100%
 #| column: page
 
-UMAP_exp <- image_files[str_detect(image_files, "UMAP Marker Expression")]
-
-knitr::include_graphics(UMAP_exp)
+knitr::include_graphics(UMAP_marker_exp_png)
 ```
 
 
@@ -195,9 +225,7 @@ Let's visualize the clusters on patients
 #| out-width: 100%
 #| column: page
 
-PT_UMAP <- image_files[str_detect(image_files, "UMAP per patient")]
-
-knitr::include_graphics(PT_UMAP)
+knitr::include_graphics(UMAP_PT_png)
 ```
 
 
@@ -207,11 +235,6 @@ knitr::include_graphics(PT_UMAP)
 #| out-width: 100%
 #| column: page
 
-PT_evts_per_MC <- image_files[str_detect(
-  image_files,
-  "Events per metacluster per patient\\.png$"
-)]
-
-knitr::include_graphics(PT_evts_per_MC)
+knitr::include_graphics(evts_MC_PT_png)
 ```
 
