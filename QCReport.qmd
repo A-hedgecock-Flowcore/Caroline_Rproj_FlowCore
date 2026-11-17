@@ -157,11 +157,6 @@ library(htmltools)
 message("QC report setup: checking output folder")
 flush.console()
 
-project_root <- normalizePath(
-  getwd(),
-  winslash = "/",
-  mustWork = TRUE
-)
 analysisInfo_folder <- file.path("AnalysisInfo")
 parameters_file <- list.files(
   analysisInfo_folder,
@@ -171,14 +166,7 @@ parameters_file <- list.files(
 )
 analysis_parameters <- yaml::read_yaml(parameters_file)
 
-output_folder <- file.path(project_root, analysis_parameters$output_folder)
-
-if (!fs::is_absolute_path(output_folder)) {
-  output_folder <- file.path(
-    project_root,
-    output_folder
-  )
-}
+output_folder <- file.path(analysis_parameters$output_folder)
 
 if (!dir.exists(output_folder)) {
   stop(
@@ -186,7 +174,6 @@ if (!dir.exists(output_folder)) {
     output_folder
   )
 }
-
 
 # Generated image folders
 
@@ -667,6 +654,36 @@ static_image_gallery <- function(files, section) {
 
   paste(image_lines, collapse = "\n\n")
 }
+
+render_qc_image_group <- function(
+  files,
+  carousel_id,
+  title,
+  pdf_section,
+  image_height = "32rem"
+) {
+  if (knitr::is_html_output()) {
+    return(
+      make_image_carousel(
+        image_files = files,
+        carousel_id = carousel_id,
+        title = title,
+        image_height = image_height
+      )
+    )
+  }
+
+  if (knitr::is_latex_output()) {
+    return(
+      static_image_gallery(
+        files = files,
+        section = pdf_section
+      )
+    )
+  }
+
+  ""
+}
 ```
 
 # Executive summary
@@ -704,8 +721,7 @@ run_overview <- tibble(
     "Pipeline status",
     "Start time",
     "End time",
-    "Duration (minutes)",
-    "Project root"
+    "Duration (minutes)"
   ),
   Value = c(
     summary_value(
@@ -720,11 +736,7 @@ run_overview <- tibble(
       pipeline_summary,
       "end_time"
     ),
-    round(as.numeric(pipeline_summary$duration_minutes), 0),
-    summary_value(
-      pipeline_summary,
-      "project_root"
-    )
+    round(as.numeric(pipeline_summary$duration_minutes), 0)
   )
 )
 knitr::kable(run_overview)
@@ -1166,39 +1178,36 @@ if (length(patient_gating_images) == 0) {
 } else {
   if (length(patient_ungated_images) > 0) {
     cat("### Ungated patient NxN plots\n\n")
-
     cat(
-      make_image_carousel(
-        image_files = patient_ungated_images,
-        carousel_id = "patient-ungated-gating",
+      render_qc_image_group(
+        files = patient_ungated_images,
+        carousel_id = "patient-ungated-NxN",
         title = "Ungated patient NxN plots",
-        image_height = "32rem"
+        pdf_section = "Patient Ungated NxN"
       )
     )
   }
 
   if (length(patient_cleanup_images) > 0) {
-    cat("\n### Patient cleanup gating plots\n\n")
-
+    cat("### Patient cleanup gating plots\n\n")
     cat(
-      make_image_carousel(
-        image_files = patient_cleanup_images,
+      render_qc_image_group(
+        files = patient_cleanup_images,
         carousel_id = "patient-cleanup-gating",
         title = "Patient cleanup gating plots",
-        image_height = "32rem"
+        pdf_section = "Patient gating - cleanup gating"
       )
     )
   }
 
   if (length(patient_cleaned_images) > 0) {
-    cat("\n### Gated patient NxN plots\n\n")
-
+    cat("### Gated patient NxN plots\n\n")
     cat(
-      make_image_carousel(
-        image_files = patient_cleaned_images,
+      render_qc_image_group(
+        files = patient_cleaned_images,
         carousel_id = "patient-cleaned-gating",
         title = "Gated patient NxN plots",
-        image_height = "32rem"
+        pdf_section = "Patient gating - cleaned NxN"
       )
     )
   }
@@ -1206,16 +1215,6 @@ if (length(patient_gating_images) == 0) {
 ```
 
 
-```{r}
-#| label: pdf-gating-images-patient
-#| results: asis
-
-if (knitr::is_latex_output()) {
-  if (length(patient_gating_images) > 0) {
-    cat(static_image_gallery(patient_gating_images, "Patient gating"))
-  }
-}
-```
 
 ## Control gating plots
 
@@ -1254,53 +1253,43 @@ if (length(controls_gating_images) == 0) {
     cat("### Ungated control NxN plots\n\n")
 
     cat(
-      make_image_carousel(
-        image_files = controls_ungated_images,
-        carousel_id = "controls-ungated-gating",
-        title = "Ungated control NxN plots",
-        image_height = "32rem"
+      render_qc_image_group(
+        files = controls_ungated_images,
+        carousel_id = "controls-ungated-NxN",
+        title = "Ungated controls gating NxN plots",
+        pdf_section = "Controls ungated NxN"
       )
     )
   }
 
   if (length(controls_cleanup_images) > 0) {
-    cat("\n### Control cleanup gating plots\n\n")
+    cat("### Control cleanup gating plots\n\n")
 
     cat(
-      make_image_carousel(
-        image_files = controls_cleanup_images,
+      render_qc_image_group(
+        files = controls_cleanup_images,
         carousel_id = "controls-cleanup-gating",
-        title = "Control cleanup gating plots",
-        image_height = "32rem"
+        title = "Controls cleanup gating plots",
+        pdf_section = "Controls gating - cleanup gating"
       )
     )
   }
 
   if (length(controls_cleaned_images) > 0) {
-    cat("\n### Gated control NxN plots\n\n")
+    cat("### Gated control NxN plots\n\n")
 
     cat(
-      make_image_carousel(
-        image_files = controls_cleaned_images,
-        carousel_id = "controls-cleaned-gating",
-        title = "Gated control NxN plots",
-        image_height = "32rem"
+      render_qc_image_group(
+        files = controls_cleaned_images,
+        carousel_id = "controls-cleaned-NxN-gating",
+        title = "Controls cleaned NxN gating plots",
+        pdf_section = "Controls gating - cleaned NxN gating"
       )
     )
   }
 }
 ```
 
-```{r}
-#| label: pdf-gating-images-control
-#| results: asis
-
-if (knitr::is_latex_output()) {
-  if (length(controls_gating_images) > 0) {
-    cat(static_image_gallery(controls_gating_images, "Controls gating"))
-  }
-}
-```
 
 # compensAID QC
 
@@ -1347,15 +1336,22 @@ if (length(patient_compensaid_matrix_images) == 0) {
   cat("No patient compensAID SSI matrix images were found.")
 } else {
   cat(
-    make_image_carousel(
-      image_files = patient_compensaid_matrix_images,
-      carousel_id = "patient-compensaid-ssi-matrices",
-      title = "Patient compensAID SSI matrices",
-      image_height = "32rem"
+    render_qc_image_group(
+      files = patient_compensaid_matrix_images,
+      carousel_id = "patient-SSI-matrix",
+      title = "Patient compensAID SSI Matrix",
+      pdf_section = "Patient CompensAID SSI Matrix"
     )
   )
 }
 
+patient_compensaid_pair_images <- patient_compensaid_images[
+  grepl(
+    "_pair_",
+    basename(patient_compensaid_images),
+    ignore.case = TRUE
+  )
+]
 patient_compensaid_state <- compensaid_summary_state(
   patient_compensaid_summary
 )
@@ -1376,30 +1372,16 @@ if (patient_compensaid_state == "unavailable") {
   )
 
   cat(
-    make_image_carousel(
-      image_files = patient_compensaid_pair_images,
-      carousel_id = "patient-compensaid-flagged-pairs",
-      title = "Patient compensAID flagged-pair diagnostics",
-      image_height = "32rem"
+    render_qc_image_group(
+      files = patient_compensaid_pair_images,
+      carousel_id = "patient-compensaid-pairs",
+      title = "Patient compensAID flagged pairs",
+      pdf_section = "Patient potential unmixing issues"
     )
   )
 }
 ```
 
-
-```{r}
-#| label: pdf-compensaid-images-patient
-#| results: asis
-
-if (knitr::is_latex_output()) {
-  if (length(patient_compensaid_images) > 0) {
-    cat(static_image_gallery(
-      patient_compensaid_images,
-      "Patient compensAID images"
-    ))
-  }
-}
-```
 
 ## Control summary
 
@@ -1445,11 +1427,11 @@ if (length(controls_compensaid_matrix_images) == 0) {
   cat("No control compensAID SSI matrix images were found.")
 } else {
   cat(
-    make_image_carousel(
-      image_files = controls_compensaid_matrix_images,
-      carousel_id = "controls-compensaid-ssi-matrices",
-      title = "Control compensAID SSI matrices",
-      image_height = "32rem"
+    render_qc_image_group(
+      files = controls_compensaid_matrix_images,
+      carousel_id = "controls-SSI-matirx",
+      title = "Control compensAID SSI Matrix",
+      pdf_section = "Control SSI Matrix"
     )
   )
 }
@@ -1478,26 +1460,12 @@ if (is.null(controls_compensaid_summary)) {
   )
 
   cat(
-    make_image_carousel(
-      image_files = controls_compensaid_pair_images,
-      carousel_id = "controls-compensaid-flagged-pairs",
-      title = "Control compensAID flagged-pair diagnostics",
-      image_height = "32rem"
+    render_qc_image_group(
+      files = controls_compensaid_pair_images,
+      carousel_id = "controls-compensaid-pairs",
+      title = "Controls compensAID flagged pairs",
+      pdf_section = "Controls potential unmixing issues"
     )
   )
-}
-```
-
-```{r}
-#| label: pdf-compensaid-images-control
-#| results: asis
-
-if (knitr::is_latex_output()) {
-  if (length(controls_compensaid_images) > 0) {
-    cat(static_image_gallery(
-      controls_compensaid_images,
-      "Controls compensAID images"
-    ))
-  }
 }
 ```
