@@ -1,7 +1,3 @@
-# Load openCyto gatingTemplate
-cleanup_gates <- data.table::fread(CleanUpGatingTemplateFile)
-Template <- gatingTemplate(cleanup_gates)
-
 # PT
 ## Create GatingSets
 AutoSpectral_unmixed_files <- list.files(
@@ -30,7 +26,7 @@ PT_gs <- GatingSet(PT_cs)
 # Transform data
 ## PT_gs
 parameters <- colnames(PT_gs)
-flurophores_only <- parameters[!str_detect(parameters, "Time|FSC|SSC|AF")]
+fluorophores_only <- parameters[!str_detect(parameters, "Time|FSC|SSC|AF")]
 
 ### transformation
 Biexponential <- flowjo_biexp_trans(
@@ -40,9 +36,13 @@ Biexponential <- flowjo_biexp_trans(
   neg = 0,
   widthBasis = -1000
 )
-BiexTransformList <- transformerList(flurophores_only, Biexponential)
+BiexTransformList <- transformerList(fluorophores_only, Biexponential)
 
 transform(PT_gs, BiexTransformList)
+
+### estimateLogicle test
+trans_list <- estimateLogicle(PT_gs[[1]], fluorophores_only)
+transform(PT_gs, trans_list)
 
 # Clean
 helper_function_folder <- file.path("R", "helper_functions")
@@ -79,7 +79,7 @@ PT_PeacoQC_results <- purrr::imap(
   \(flow_frame, sample_name) {
     PeacoQC::PeacoQC(
       ff = flow_frame,
-      channels = flurophores_only,
+      channels = fluorophores_only,
       determine_good_cells = "all",
       plot = TRUE,
       save_fcs = FALSE,
@@ -104,6 +104,8 @@ PT_ungated_nxn <- Utility_NbyNPlots(
 )
 
 # Cleaup Gates
+cleanup_gates <- data.table::fread(CleanUpGatingTemplateFile)
+Template <- gatingTemplate(cleanup_gates)
 gt_gating(Template, PT_gs)
 
 PT_cleanup_GatingPlots <- Utility_GatingPlots(
@@ -119,7 +121,7 @@ PT_cleanup_nxn_GatingPlots <- Utility_NbyNPlots(
   PT_gs,
   sample.name = "TUBENAME",
   gatesubset = "singlets",
-  ycolumn = "SSC-A"
+  ycolumn = "PE-Cy7-A"
 )
 
 
@@ -162,7 +164,7 @@ if (length(unmixed_controls) == 0) {
 ## Controls_gs
 if (!is.null(controls_gs)) {
   parameters <- colnames(controls_gs)
-  flurophores_only <- parameters[
+  fluorophores_only <- parameters[
     !str_detect(parameters, "Time|FSC|SSC|Index")
   ]
 
@@ -174,7 +176,7 @@ if (!is.null(controls_gs)) {
     neg = 0,
     widthBasis = -1000
   )
-  BiexTransformList <- transformerList(flurophores_only, Biexponential)
+  BiexTransformList <- transformerList(fluorophores_only, Biexponential)
 
   transform(controls_gs, BiexTransformList)
 }

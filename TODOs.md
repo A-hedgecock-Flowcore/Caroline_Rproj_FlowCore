@@ -6,6 +6,6 @@
 [x] pdf version of QC report
 [] annotating clusters dynamically?
 [] should controls be processes the same? (LiveDead only and PBMC + U251 control)
-[] gating file
-[] transformation of certain poorly seperated markersn(i.e. CD4)
+[] gating file in README
+[x] transformation of certain poorly seperated markersn(i.e. CD4) - logicle transformation
 [] update README

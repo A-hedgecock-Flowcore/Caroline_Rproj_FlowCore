@@ -184,6 +184,30 @@ knitr::include_graphics(evts_MC_png)
 knitr::include_graphics(UMAP_overlay_png)
 ```
 
+# Metacluster Representation in Patients
+
+Let's visualize the clusters on patients
+
+
+```{r}
+#| label: UMAP-per-patient
+#| fig-cap: "UMAP per patient"
+#| out-width: 100%
+#| column: page
+
+knitr::include_graphics(UMAP_PT_png)
+```
+
+
+```{r}
+#| label: fig-evts-per-MC-PT
+#| fig-cap: "Events per Metacluster per patient"
+#| out-width: 100%
+#| column: page
+
+knitr::include_graphics(evts_MC_PT_png)
+```
+
 # Identify Metaclusters
 The images below are to help identify and eventually annotate the clusters. 
 
@@ -213,28 +237,97 @@ knitr::include_graphics(marker_exp_MC_png)
 knitr::include_graphics(UMAP_marker_exp_png)
 ```
 
+## Annotate Clusters
 
-# Metacluster Representation in Patients
-
-Let's visualize the clusters on patients
-
+Run this Shiny app locally to annotate clusters. This report can then be re-run with the annotations. 
 
 ```{r}
-#| label: UMAP-per-patient
-#| fig-cap: "UMAP per patient"
-#| out-width: 100%
-#| column: page
+#| label: ID-metaclusters-app
+#| code-fold: false
+#| eval: false
+#| echo: true
 
-knitr::include_graphics(UMAP_PT_png)
+shiny::runApp(file.path(output_folder, "cluster_annotation_app.R"))
 ```
 
 
-```{r}
-#| label: fig-evts-per-MC-PT
-#| fig-cap: "Events per Metacluster per patient"
-#| out-width: 100%
-#| column: page
 
-knitr::include_graphics(evts_MC_PT_png)
+# Annotated Cluster Results
+
+```{r}
+#| label: load-annotation-exports
+
+annotation_files <- c(
+  cluster_map = file.path(spectre_output_folder, "cluster_annotations.csv"),
+  annotated_cells = file.path(
+    spectre_output_folder,
+    "all_cells_with_annotations.csv"
+  ),
+  population_summary = file.path(
+    spectre_output_folder,
+    "population_summary.csv"
+  )
+)
+
+missing_annotation_files <- names(annotation_files)[
+  !file.exists(annotation_files)
+]
+
+annotations_available <- length(missing_annotation_files) == 0
+
+if (annotations_available) {
+  cluster_annotations <- read_csv(
+    annotation_files[["cluster_map"]],
+    show_col_types = FALSE
+  )
+
+  annotated_cells <- read_csv(
+    annotation_files[["annotated_cells"]],
+    show_col_types = FALSE
+  )
+
+  population_summary <- read_csv(
+    annotation_files[["population_summary"]],
+    show_col_types = FALSE
+  )
+}
 ```
+
+```{r}
+#| label: annotated-cluster-map
+
+if (annotations_available) {
+  knitr::kable(
+    cluster_annotations |>
+      arrange(FlowSOM_metacluster),
+    caption = "FlowSOM metacluster population annotations"
+  )
+} else {
+  cat(
+    "Annotation exports are not available yet. Run the Shiny app, ",
+    "save all three CSVs to the Spectre_outputs folder, and render ",
+    "the report again. Missing: ",
+    paste(missing_annotation_files, collapse = ", "),
+    "."
+  )
+}
+```
+
+## Population Summary
+
+Clusters assigned the same population name are combined in this summary. When the `Sample` column is available, the table reports counts and percentages per sample.
+
+```{r}
+#| label: annotated-population-summary
+
+if (annotations_available) {
+  knitr::kable(
+    population_summary |>
+      arrange(across(any_of(c("Sample", "Population")))),
+    digits = 2,
+    caption = "Annotated population counts and percentages"
+  )
+}
+```
+
 

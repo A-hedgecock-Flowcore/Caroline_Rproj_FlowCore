@@ -324,6 +324,7 @@ p <- p + facet_wrap(~Sample)
 
 ggsave("UMAP per patient.png", p, width = 10, path = spectre_output_folder)
 
+
 markers <- subsampled_cleaned_data |>
   pivot_longer(
     cols = all_of(cluster_cols),
@@ -371,19 +372,19 @@ table <- create.sumtable(
 write_csv(
   table,
   file = file.path(spectre_output_folder, "Summary Table.csv"),
-  col_names = FALSE
+  col_names = TRUE
 )
 
 write_csv(
   subsampled_cleaned_data,
-  file = file.path(spectre_output_folder, "subsampled_UMAP.csv"),
-  col_names = FALSE
+  file = file.path(spectre_output_folder, "Subsampled_UMAP.csv"),
+  col_names = TRUE
 )
 
 write_csv(
   cleaned_data,
   file = file.path(spectre_output_folder, "all_cells_noUMAP.csv"),
-  col_names = FALSE
+  col_names = TRUE
 )
 
 withr::with_dir(
