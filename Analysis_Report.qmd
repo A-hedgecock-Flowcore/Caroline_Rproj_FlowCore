@@ -319,19 +319,44 @@ if (annotations_available) {
 
 ## Population Summary
 
-Clusters assigned the same population name are combined in this summary. When the `Sample` column is available, the table reports counts and percentages per sample.
+Clusters assigned the same population name are combined in this summary. 
+
 
 ```{r}
-#| label: annotated-population-summary
-
-if (annotations_available) {
-  knitr::kable(
-    population_summary |>
-      arrange(across(any_of(c("Sample", "Population")))),
-    digits = 2,
-    caption = "Annotated population counts and percentages"
+#| label: lollipop-annotated-sample
+#| fig-height: 20
+plot_data <- population_summary |>
+  mutate(
+    Population = as.character(Population),
+    Population_facet = tidytext::reorder_within(
+      Population,
+      Percent_of_sample,
+      Sample
+    )
   )
-}
+
+ggplot(plot_data, aes(x = Percent_of_sample, y = Population_facet)) +
+  geom_segment(
+    aes(x = 0, xend = Percent_of_sample, yend = Population_facet),
+    color = "grey65",
+    linewidth = 0.7
+  ) +
+  geom_point(aes(color = Population), size = 2.8) +
+  paletteer::scale_color_paletteer_d(
+    "ggsci::category20_d3",
+    name = "Population"
+  ) +
+  guides(color = "none") +
+  facet_grid(vars(Sample), scales = "free_y", space = "free_y") +
+  tidytext::scale_y_reordered() +
+  labs(
+    x = "Cells in sample (%)",
+    y = NULL,
+    title = "Annotated populations by patient"
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(face = "bold"),
+    panel.grid.major = element_blank(),
+  )
 ```
-
-
