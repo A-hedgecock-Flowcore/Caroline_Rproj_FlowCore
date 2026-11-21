@@ -157,6 +157,7 @@ library(htmltools)
 message("QC report setup: checking output folder")
 flush.console()
 
+project_root <- getwd()
 analysisInfo_folder <- file.path("AnalysisInfo")
 parameters_file <- list.files(
   analysisInfo_folder,

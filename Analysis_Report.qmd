@@ -258,7 +258,10 @@ shiny::runApp(file.path(output_folder, "cluster_annotation_app.R"))
 #| label: load-annotation-exports
 
 annotation_files <- c(
-  cluster_map = file.path(spectre_output_folder, "cluster_annotations.csv"),
+  cluster_map = file.path(
+    spectre_output_folder,
+    "cluster_annotations.csv"
+  ),
   annotated_cells = file.path(
     spectre_output_folder,
     "all_cells_with_annotations.csv"
@@ -276,17 +279,18 @@ missing_annotation_files <- names(annotation_files)[
 annotations_available <- length(missing_annotation_files) == 0
 
 if (annotations_available) {
-  cluster_annotations <- read_csv(
+  cluster_annotations <- readr::read_csv(
     annotation_files[["cluster_map"]],
     show_col_types = FALSE
   )
 
-  annotated_cells <- read_csv(
+  annotated_cells <- readr::read_csv(
     annotation_files[["annotated_cells"]],
-    show_col_types = FALSE
+    show_col_types = FALSE,
+    progress = FALSE
   )
 
-  population_summary <- read_csv(
+  population_summary <- readr::read_csv(
     annotation_files[["population_summary"]],
     show_col_types = FALSE
   )
