@@ -103,6 +103,11 @@ UMAP_overlay_png <- file.path(
   spectre_output_folder,
   "UMAP with FlowSOM overlay.png"
 )
+
+antigen_exp_within_samples <- file.path(
+  spectre_output_folder,
+  "Expression distribution by Antigen.png"
+)
 ```
 
 # Overall summary
@@ -229,6 +234,16 @@ knitr::include_graphics(marker_exp_MC_png)
 ```
 
 ```{r}
+#| label: fig-antigen-exp-within-samples
+#| fig-cap: "Antigen expression distribution across metaclusters"
+#| out-width: 100%
+#| column: page
+
+knitr::include_graphics(antigen_exp_within_samples)
+```
+
+
+```{r}
 #| label: fig-exp-UMAP
 #| fig-cap: "UMAP with Antigen Expression Overlaid"
 #| out-width: 100%
@@ -342,10 +357,6 @@ ggplot(plot_data, aes(x = Percent_of_sample, y = Population_facet)) +
     linewidth = 0.7
   ) +
   geom_point(aes(color = Population), size = 2.8) +
-  paletteer::scale_color_paletteer_d(
-    "ggsci::category20_d3",
-    name = "Population"
-  ) +
   guides(color = "none") +
   facet_grid(vars(Sample), scales = "free_y", space = "free_y") +
   tidytext::scale_y_reordered() +
@@ -359,4 +370,109 @@ ggplot(plot_data, aes(x = Percent_of_sample, y = Population_facet)) +
     strip.text = element_text(face = "bold"),
     panel.grid.major = element_blank(),
   )
+```
+
+
+```{r}
+#| label: evts-per-MC-labelled
+#| fig-cap: "UMAP with population overlays"
+#| fig-width: 10
+#| fig-height: 8
+#| echo: false
+
+annotations_lookup <- cluster_annotations |>
+  transmute(
+    FlowSOM_metacluster = as.character(FlowSOM_metacluster),
+    Population_annotation = na_if(trimws(as.character(Population)), "")
+  )
+
+subsampled_UMAP <- read_csv(
+  file.path(spectre_output_folder, "subsampled_UMAP.csv"),
+  show_col_types = FALSE
+)
+
+UMAP_annotated_cells <- subsampled_UMAP |>
+  mutate(FlowSOM_metacluster = as.character(FlowSOM_metacluster)) |>
+  left_join(annotations_lookup, by = "FlowSOM_metacluster") |>
+  mutate(
+    Population_annotation = replace_na(Population_annotation, "Unannotated")
+  )
+
+cluster_centers <- UMAP_annotated_cells |>
+  group_by(Population_annotation) |>
+  dplyr::summarise(
+    UMAP_X = median(UMAP_X, na.rm = TRUE),
+    UMAP_Y = median(UMAP_Y, na.rm = TRUE),
+    .groups = "drop"
+  )
+ggplot(
+  UMAP_annotated_cells,
+  aes(UMAP_X, UMAP_Y, color = Population_annotation)
+) +
+  geom_hex(bins = 300) +
+  ggrepel::geom_label_repel(
+    data = cluster_centers,
+    aes(
+      x = UMAP_X,
+      y = UMAP_Y,
+      label = Population_annotation,
+      color = Population_annotation
+    ),
+    inherit.aes = FALSE,
+    size = 2,
+    seed = 123,
+    box.padding = 0.5,
+    point.padding = 0.3,
+    max.overlaps = Inf,
+    min.segment.length = 0
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    legend.position = "none"
+  ) +
+  labs(
+    title = "UMAP with population overlays"
+  )
+```
+
+
+```{r}
+#| label: UMAP-per-PT-annotated
+#| fig-cap: "UMAP with population overlays per patient"
+#| fig-width: 10
+#| fig-height: 8
+#| echo: false
+
+ggplot(
+  UMAP_annotated_cells,
+  aes(UMAP_X, UMAP_Y, color = Population_annotation)
+) +
+  geom_hex(bins = 300) +
+  ggrepel::geom_label_repel(
+    data = cluster_centers,
+    aes(
+      x = UMAP_X,
+      y = UMAP_Y,
+      label = Population_annotation,
+      color = Population_annotation
+    ),
+    inherit.aes = FALSE,
+    size = 2,
+    seed = 123,
+    box.padding = 0.5,
+    point.padding = 0.3,
+    max.overlaps = Inf,
+    min.segment.length = 0
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    legend.position = "none"
+  ) +
+  labs(
+    title = "UMAP with population overlays per patient"
+  ) +
+  facet_wrap(~Sample)
+
 ```

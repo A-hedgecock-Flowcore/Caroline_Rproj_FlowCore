@@ -192,7 +192,7 @@ p <- ggplot(
   )
 
 ggsave(
-  "Antigen expression across metacluster.png",
+  "Expression distribution by Antigen.png",
   p,
   width = 10,
   height = 8,
